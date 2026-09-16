@@ -791,3 +791,108 @@ body::after{ width:300px; height:300px; background:#ffdcb0; opacity:.45; bottom:
   .onb-illustration svg{ width:200px; height:200px; }
   .onb-content{ flex:1; min-width:0; }
 }
+/* =====================================================================
+   MODO OSCURO
+   Se activa poniendo data-theme="dark" en <html> (ver js/app.js).
+   Como casi todo el sistema usa variables CSS, basta con redefinirlas
+   aquí; sólo unos pocos colores estaban "quemados" en el CSS original
+   y se corrigen abajo con selectores puntuales.
+   ===================================================================== */
+html[data-theme="dark"]{
+  --bg-grad-1:#141726;
+  --bg-grad-2:#1a1d30;
+  --bg-grad-3:#12141f;
+
+  --primary:#9fb0e0;
+  --primary-dark:#7c8fc9;
+  --primary-light:#b7c2ea;
+
+  --accent:#93a4fc;
+  --accent-soft:#262b46;
+  --accent-strong:#a5b4ff;
+
+  --orange:#ffab6b;
+  --orange-soft:rgba(242,153,74,.16);
+  --success:#6fd6a8;
+  --success-soft:rgba(79,183,135,.16);
+  --danger:#ff8b88;
+  --danger-soft:rgba(239,111,108,.18);
+
+  --card:#1f2334;
+  --card-alt:#262b40;
+  --border:#333850;
+
+  --text:#e9ebf7;
+  --text-muted:#a9aec8;
+  --text-faint:#7a80a0;
+
+  --shadow-sm:0 4px 14px rgba(0,0,0,.28);
+  --shadow-md:0 12px 30px rgba(0,0,0,.38);
+  --shadow-btn:0 10px 22px rgba(124,143,201,.35);
+
+  color-scheme:dark;
+}
+
+/* Fondo general (tenía colores fijos, no variables) */
+html[data-theme="dark"] body{
+  background:
+    radial-gradient(circle at 15% 0%, rgba(139,157,251,.10) 0%, transparent 45%),
+    radial-gradient(circle at 90% 10%, rgba(111,214,168,.08) 0%, transparent 40%),
+    linear-gradient(160deg, var(--bg-grad-1), var(--bg-grad-2) 55%, var(--bg-grad-3));
+}
+
+/* Manchas decorativas de fondo, más discretas en oscuro */
+html[data-theme="dark"] body::before{ background:#3b4374; opacity:.28; }
+html[data-theme="dark"] body::after{ background:#5b4426; opacity:.2; }
+
+@media (min-width:560px){
+  html[data-theme="dark"] .app-shell{ box-shadow:0 30px 70px rgba(0,0,0,.45); }
+}
+
+/* Elementos con blanco "quemado" en vez de variables */
+html[data-theme="dark"] .btn-outline{ background:var(--card); color:var(--primary); border-color:var(--border); }
+html[data-theme="dark"] .back-btn{ background:var(--card); }
+html[data-theme="dark"] .input-wrap:focus-within{ background:var(--card); }
+html[data-theme="dark"] .bottom-nav{ background:var(--card); border-top-color:var(--border); box-shadow:0 -10px 30px rgba(0,0,0,.35); }
+html[data-theme="dark"] .side-nav{ background:var(--card); border-right-color:var(--border); }
+html[data-theme="dark"] .modal-overlay{ background:rgba(0,0,0,.6); }
+html[data-theme="dark"] .modal-sheet{ background:var(--card); }
+html[data-theme="dark"] .avatar-ring::before{ background:var(--card); }
+
+/* Degradados e insignias que tenían tonos claros fijos */
+html[data-theme="dark"] .predict-card{ background:linear-gradient(135deg,#242a42,#1e2438 60%, #1b1f30); }
+html[data-theme="dark"] .predict-badge{ background:rgba(255,255,255,.08); }
+html[data-theme="dark"] .risk-bar{ background:rgba(255,255,255,.08); }
+html[data-theme="dark"] .tips-hero{ background:linear-gradient(135deg,#242a42,#1c2032); }
+html[data-theme="dark"] .banner-detect .go{ background:rgba(255,255,255,.14); }
+html[data-theme="dark"] .auth-blob{ background:rgba(255,255,255,.05); }
+html[data-theme="dark"] .auth-blob.b2{ background:rgba(255,255,255,.04); }
+
+/* ---------- Interruptor de modo oscuro (en Perfil) ---------- */
+.theme-row .settings-label svg{ color:var(--primary); }
+/* ---------- Interruptor de modo oscuro (en la barra lateral) ---------- */
+.side-nav-theme{
+  display:flex; align-items:center; justify-content:space-between;
+  gap:10px; padding:10px 12px; margin-bottom:10px;
+  border-radius:var(--radius-md);
+  background:var(--card-alt);
+}
+.side-nav-theme-label{
+  display:flex; align-items:center; gap:10px;
+  font-size:.82rem; font-weight:700; color:var(--text-muted);
+}
+.side-nav-theme-label svg{ width:17px; height:17px; flex:none; color:var(--primary); }
+
+/* ---------- Botón flotante de modo oscuro (login / crear cuenta) ---------- */
+.theme-fab{
+  position:fixed; top:18px; right:18px; z-index:50;
+  height:40px; padding:0 16px; border-radius:var(--radius-pill); border:none;
+  background:var(--card); box-shadow:var(--shadow-sm);
+  display:flex; align-items:center;
+  color:var(--primary); font-family:var(--font-head); font-weight:700; font-size:.8rem;
+}
+.theme-fab-opt{ display:flex; align-items:center; gap:8px; }
+.theme-fab-opt svg{ width:17px; height:17px; flex:none; }
+.theme-fab .opt-light{ display:none; }
+html[data-theme="dark"] .theme-fab .opt-dark{ display:none; }
+html[data-theme="dark"] .theme-fab .opt-light{ display:flex; }

@@ -123,4 +123,36 @@ function msFormatDate(iso) {
   return d.toLocaleDateString('es-BO', { day: '2-digit', month: 'short' });
 }
 
+/* ---------- Modo oscuro ---------- */
+const MS_THEME_KEY = 'ms_theme';
+
+function msGetPreferredTheme() {
+  const saved = localStorage.getItem(MS_THEME_KEY);
+  if (saved === 'dark' || saved === 'light') return saved;
+  return (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+}
+
+function msApplyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  document.querySelectorAll('.theme-toggle').forEach(input => { input.checked = theme === 'dark'; });
+}
+
+function msSetTheme(theme) {
+  localStorage.setItem(MS_THEME_KEY, theme);
+  msApplyTheme(theme);
+}
+
+function msToggleTheme() {
+  const current = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+  msSetTheme(current === 'dark' ? 'light' : 'dark');
+}
+
+function msInitThemeToggle() {
+  msApplyTheme(msGetPreferredTheme());
+  document.querySelectorAll('.theme-toggle').forEach(input => {
+    input.addEventListener('change', () => msSetTheme(input.checked ? 'dark' : 'light'));
+  });
+}
+
 document.addEventListener('DOMContentLoaded', msSetActiveNav);
+document.addEventListener('DOMContentLoaded', msInitThemeToggle);

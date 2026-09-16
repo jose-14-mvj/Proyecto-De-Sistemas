@@ -6,6 +6,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" href="assets/img/favicon-32.png">
 <link rel="stylesheet" href="css/style.css">
+<script>
+(function(){
+  try{
+    var t = localStorage.getItem('ms_theme');
+    if(!t){ t = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light'; }
+    document.documentElement.setAttribute('data-theme', t);
+  }catch(e){}
+})();
+</script>
 </head>
 <body>
 <div class="app-shell">
@@ -30,7 +39,14 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/></svg>
       Perfil
     </a>
-    <div class="side-nav-footer">
+        <div class="side-nav-footer">
+      <div class="side-nav-theme">
+        <span class="side-nav-theme-label">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/></svg>
+          Modo oscuro
+        </span>
+        <label class="switch"><input type="checkbox" class="theme-toggle"><span class="slider"></span></label>
+      </div>
       <a href="registro.html" class="btn btn-primary btn-sm" style="width:100%;">+ Registrar</a>
     </div>
   </nav>
