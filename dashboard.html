@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Inicio · MigraSense</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="assets/img/favicon-32.png">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="app-shell">
+  <nav class="side-nav">
+    <div class="logo-sm">
+      <img src="assets/img/logo-icon.png" alt="MigraSense">
+      <strong>Migra<span>Sense</span></strong>
+    </div>
+    <a href="dashboard.html" class="nav-item" data-page="dashboard.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/></svg>
+      Inicio
+    </a>
+    <a href="consejos.html" class="nav-item" data-page="consejos.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3 11c1 .7 1 1.4 1 2h4c0-.6 0-1.3 1-2a6 6 0 0 0-3-11Z"/></svg>
+      Consejos
+    </a>
+    <a href="historial.html" class="nav-item" data-page="historial.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19V5h16v14M4 9h16M9 13h6M9 16h4"/></svg>
+      Historial
+    </a>
+    <a href="perfil.html" class="nav-item" data-page="perfil.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/></svg>
+      Perfil
+    </a>
+    <div class="side-nav-footer">
+      <a href="registro.html" class="btn btn-primary btn-sm" style="width:100%;">+ Registrar</a>
+    </div>
+  </nav>
+  <div class="screen">
+
+    <div class="topbar">
+      <div class="logo-sm">
+        <img src="assets/img/logo-icon.png" alt="MigraSense">
+        <strong>Migra<span>Sense</span></strong>
+      </div>
+      <a href="perfil.html" class="avatar" id="avatarBtn">--</a>
+    </div>
+
+    <div class="greeting mt-8">
+      Hola de nuevo
+      <strong id="greetName">—</strong>
+    </div>
+
+    <div class="predict-card mt-16">
+      <div class="predict-badge"><span class="dot"></span> Predicción de hoy</div>
+      <div class="predict-row">
+        <div>
+          <div class="predict-title" id="riskTitle">Calculando riesgo…</div>
+          <p class="predict-desc" id="riskDesc">Estamos analizando tus últimos registros.</p>
+        </div>
+        <svg class="predict-icon" viewBox="0 0 100 100" overflow="visible">
+          <circle class="predict-pulse" cx="50" cy="50" r="30" fill="none" stroke="var(--accent-strong)" stroke-width="2" opacity=".5"/>
+          <circle cx="50" cy="50" r="42" fill="#fff" opacity=".6"/>
+          <path d="M50 22c-17 0-30 13-30 29 0 12 7 20 13 25v12h34V76c6-5 13-13 13-25 0-16-13-29-30-29Z" fill="#c9d3fb"/>
+          <path d="M38 50c4-6 10-6 14 0M52 50c4-6 10-6 14 0" stroke="#4a5c82" stroke-width="3" stroke-linecap="round"/>
+          <path d="M40 62c6 5 15 5 21 0" stroke="#4a5c82" stroke-width="3" stroke-linecap="round"/>
+          <circle cx="27" cy="34" r="3" fill="#f2994a"/>
+          <circle cx="74" cy="40" r="2.4" fill="#8b9dfb"/>
+        </svg>
+      </div>
+      <div class="risk-bar"><div class="risk-bar-fill" id="riskBar" style="width:40%;"></div></div>
+    </div>
+
+    <a href="registro.html" class="btn btn-primary">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+      Registrar síntomas
+    </a>
+
+    <h3 class="section-title">Acciones rápidas</h3>
+    <div class="quick-grid">
+      <a href="registro.html?tab=prodromico" class="quick-item">
+        <span class="quick-icon" style="background:linear-gradient(135deg,#8b9dfb,#6c7fe8);">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M9 11H5a2 2 0 0 0-2 2v7h6v-9Zm10-4h-4a2 2 0 0 0-2 2v11h6V7ZM13 3H9v18h4V3Z"/></svg>
+        </span>
+        <span class="quick-title">Síntomas prodrómicos</span>
+        <span class="quick-sub">Registra signos iniciales</span>
+      </a>
+      <a href="registro.html?tab=episodio" class="quick-item">
+        <span class="quick-icon" style="background:linear-gradient(135deg,#f2994a,#f2b26a);">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M12 3c-3 4-7 8-7 12a7 7 0 0 0 14 0c0-4-4-8-7-12Z"/></svg>
+        </span>
+        <span class="quick-title">Episodio de migraña</span>
+        <span class="quick-sub">Nivel, duración y síntomas</span>
+      </a>
+      <a href="historial.html" class="quick-item">
+        <span class="quick-icon" style="background:linear-gradient(135deg,#4fb787,#7fd1a8);">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M4 19V5h16v14M4 9h16M9 13h6M9 16h4"/></svg>
+        </span>
+        <span class="quick-title">Historial</span>
+        <span class="quick-sub">Revisa tus registros</span>
+      </a>
+      <a href="consejos.html" class="quick-item">
+        <span class="quick-icon" style="background:linear-gradient(135deg,#7c8ac9,#4a5c82);">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3 11c1 .7 1 1.4 1 2h4c0-.6 0-1.3 1-2a6 6 0 0 0-3-11Z"/></svg>
+        </span>
+        <span class="quick-title">Consejos diarios</span>
+        <span class="quick-sub">Cuida tu bienestar</span>
+      </a>
+    </div>
+
+    <button class="banner-detect" id="detectBtn" style="width:100%; border:none; text-align:left;">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+      <span class="txt">
+        <b>Detectar señales de migraña</b>
+        <span>Analiza tus síntomas y descubre patrones importantes</span>
+      </span>
+      <span class="go"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4"><path d="M9 6l6 6-6 6"/></svg></span>
+    </button>
+
+    <div class="two-col">
+      <div class="mini-card">
+        <h4>🩺 Síntomas recientes</h4>
+        <ul class="mini-list" id="recentSymptoms"></ul>
+      </div>
+      <div class="mini-card">
+        <h4>🔔 Recordatorios</h4>
+        <ul class="mini-list">
+          <li>Registrar síntomas
+            <label class="switch"><input type="checkbox" id="remDaily" checked><span class="slider"></span></label>
+          </li>
+          <li>Revisar patrones
+            <label class="switch"><input type="checkbox" id="remWeekly" checked><span class="slider"></span></label>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+  </div>
+
+  <nav class="bottom-nav">
+    <a href="dashboard.html" class="nav-item" data-page="dashboard.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/></svg>
+      Inicio
+    </a>
+    <a href="consejos.html" class="nav-item" data-page="consejos.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3 11c1 .7 1 1.4 1 2h4c0-.6 0-1.3 1-2a6 6 0 0 0-3-11Z"/></svg>
+      Consejos
+    </a>
+    <a href="historial.html" class="nav-item" data-page="historial.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19V5h16v14M4 9h16M9 13h6M9 16h4"/></svg>
+      Historial
+    </a>
+    <a href="perfil.html" class="nav-item" data-page="perfil.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/></svg>
+      Perfil
+    </a>
+  </nav>
+</div>
+
+<div class="modal-overlay" id="detectModal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <h3 id="detectTitle" style="margin-bottom:8px;">Analizando tus patrones…</h3>
+    <p class="muted small" id="detectBody">Esto es una demostración del análisis; conecta el modelo predictivo real para resultados precisos.</p>
+    <button class="btn btn-primary mt-24" onclick="document.getElementById('detectModal').classList.remove('show')">Entendido</button>
+  </div>
+</div>
+
+<script src="js/app.js"></script>
+<script src="js/dashboard.js"></script>
+</body>
+</html>

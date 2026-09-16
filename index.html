@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>MigraSense</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="assets/img/favicon-32.png">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="app-shell no-nav">
+  <div class="screen screen-splash">
+    <span class="auth-blob b1" style="background:#c9d3fb; opacity:.35;"></span>
+    <span class="auth-blob b2" style="background:#ffdcb0; opacity:.3;"></span>
+    <div class="brand">
+      <img src="assets/img/logo.png" alt="MigraSense">
+      <div class="brand-name">Migra<span>Sense</span></div>
+    </div>
+  </div>
+</div>
+
+<script src="js/app.js"></script>
+<script>
+  // Punto de entrada: decide a qué pantalla enviar al usuario
+  setTimeout(() => {
+    if (!MS.isLoggedIn()) {
+      window.location.href = 'login.html';
+    } else if (!MS.hasOnboarding()) {
+      window.location.href = 'onboarding.html';
+    } else {
+      window.location.href = 'dashboard.html';
+    }
+  }, 500);
+</script>
+</body>
+</html>

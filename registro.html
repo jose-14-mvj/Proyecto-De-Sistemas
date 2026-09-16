@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Registro sereno · MigraSense</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="assets/img/favicon-32.png">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="app-shell no-nav wide-form">
+  <div class="screen">
+
+    <div style="display:flex; align-items:center; gap:14px; margin-bottom:6px;">
+      <a href="dashboard.html" class="back-btn" aria-label="Volver">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M15 19l-7-7 7-7"/></svg>
+      </a>
+      <div>
+        <h2 style="font-size:1.15rem;">Registro sereno</h2>
+        <p class="muted small">Un momento tranquilo para anotar cómo te sientes.</p>
+      </div>
+    </div>
+
+    <div class="tabs mt-24">
+      <button class="tab-btn active" data-tab="prodromico">Síntomas prodrómicos</button>
+      <button class="tab-btn" data-tab="episodio">Episodio de migraña</button>
+    </div>
+
+    <!-- ============ SÍNTOMAS PRODRÓMICOS ============ -->
+    <div class="tab-panel active" id="panel-prodromico">
+      <h4 class="form-group-title">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg>
+        ¿Qué señales tempranas notas?
+      </h4>
+      <p class="muted small mt-8" style="margin-bottom:14px;">Selecciona todas las que estés sintiendo en este momento.</p>
+      <div class="option-list" id="prodromicoChecklist"></div>
+
+      <h4 class="form-group-title">Nivel de malestar</h4>
+      <div class="scale-wrap">
+        <div class="scale-value" id="prodValue">4</div>
+        <p class="scale-caption" id="prodCaption">Leve</p>
+        <input type="range" min="1" max="10" value="4" id="prodIntensidad">
+        <div class="scale-labels"><span>Leve</span><span>Moderado</span><span>Intenso</span></div>
+      </div>
+
+      <h4 class="form-group-title">Notas (opcional)</h4>
+      <div class="textarea-wrap">
+        <textarea id="prodNotas" placeholder="Ej. Empecé a sentir sensibilidad a la luz después de estudiar..."></textarea>
+      </div>
+
+      <button class="btn btn-primary mt-24" id="saveProdromico">Guardar registro</button>
+    </div>
+
+    <!-- ============ EPISODIO DE MIGRAÑA ============ -->
+    <div class="tab-panel" id="panel-episodio">
+      <h4 class="form-group-title">Nivel de dolor</h4>
+      <div class="scale-wrap">
+        <div class="scale-value" id="epValue">6</div>
+        <p class="scale-caption" id="epCaption">Dolor moderado</p>
+        <input type="range" min="1" max="10" value="6" id="epIntensidad">
+        <div class="scale-labels"><span>Leve</span><span>Moderado</span><span>Severo</span></div>
+      </div>
+
+      <h4 class="form-group-title">Duración estimada</h4>
+      <div class="chip-grid" id="epDuracion">
+        <label class="chip" data-value="menos_4h"><input type="radio" name="epdur">Menos de 4h</label>
+        <label class="chip" data-value="4_24h"><input type="radio" name="epdur">4 a 24h</label>
+        <label class="chip" data-value="1_3d"><input type="radio" name="epdur">1 a 3 días</label>
+        <label class="chip" data-value="mas_3d"><input type="radio" name="epdur">Más de 3 días</label>
+      </div>
+
+      <h4 class="form-group-title">¿Cuándo comenzó?</h4>
+      <div class="field" style="margin-bottom:0;">
+        <div class="input-wrap">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>
+          <input type="datetime-local" id="epInicio">
+        </div>
+      </div>
+
+      <h4 class="form-group-title">Síntomas presentes</h4>
+      <div class="check-grid" id="epSintomas"></div>
+
+      <h4 class="form-group-title">Posibles desencadenantes</h4>
+      <div class="chip-grid" id="epDisparadores"></div>
+
+      <h4 class="form-group-title">¿Tomaste medicación?</h4>
+      <div class="chip-grid" id="epMedicacion">
+        <label class="chip" data-value="si"><input type="radio" name="epmed">Sí</label>
+        <label class="chip" data-value="no"><input type="radio" name="epmed">No</label>
+      </div>
+      <div class="field mt-16" id="epMedNombreWrap" style="display:none;">
+        <label for="epMedNombre">¿Cuál medicamento?</label>
+        <div class="input-wrap">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M8 12h8"/></svg>
+          <input type="text" id="epMedNombre" placeholder="Ej. Ibuprofeno 400mg">
+        </div>
+      </div>
+
+      <h4 class="form-group-title">Notas (opcional)</h4>
+      <div class="textarea-wrap">
+        <textarea id="epNotas" placeholder="Cualquier detalle que quieras recordar..."></textarea>
+      </div>
+
+      <button class="btn btn-primary mt-24" id="saveEpisodio">Guardar episodio</button>
+    </div>
+
+  </div>
+</div>
+
+<script src="js/app.js"></script>
+<script src="js/registro.js"></script>
+</body>
+</html>
