@@ -62,11 +62,20 @@
       </button>
     </div>
 
+    <div id="statsBox"></div>
+
     <div class="filter-row">
       <button class="filter-chip active" data-filter="todos">Todos</button>
       <button class="filter-chip" data-filter="prodromico">Prodrómicos</button>
       <button class="filter-chip" data-filter="episodio">Episodios</button>
     </div>
+
+    <div class="filter-row">
+      <button class="filter-chip active" data-view="lista">Lista</button>
+      <button class="filter-chip" data-view="calendario">Calendario</button>
+    </div>
+    <div id="calBox" style="display:none; margin-bottom:16px;"></div>
+    <div class="day-pill" id="dayPill" style="display:none;"><span></span><button type="button" aria-label="Quitar filtro de día">×</button></div>
 
     <div id="recordsList" class="stagger-in"></div>
 
@@ -106,6 +115,8 @@
     </a>
   </nav>
 </div>
+
+<div class="modal-overlay" id="detailModal"><div class="modal-sheet" id="detailSheet"></div></div>
 
 <div class="modal-overlay" id="reportModal">
   <div class="modal-sheet">
