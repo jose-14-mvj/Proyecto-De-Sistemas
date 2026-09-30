@@ -1100,3 +1100,52 @@ img.predict-icon,
   /* --- Barra de progreso del cuestionario: transición suave --- */
   .progress-fill{ transition:width .5s cubic-bezier(.22,.68,.36,1); }
 }
+
+
+/* ---------- Consejos: guías desplegables ---------- */
+#guias{ display:flex; flex-direction:column; gap:14px; margin-top:16px; }
+.acc{ padding:0; overflow:hidden; }
+.acc-btn{
+  width:100%; display:flex; align-items:center; gap:14px; padding:16px 18px;
+  background:none; border:0; cursor:pointer; text-align:left; color:var(--text); font-family:inherit;
+}
+.acc-title{ flex:1; display:flex; flex-direction:column; gap:2px; font-family:var(--font-head); font-size:.95rem; }
+.acc-title small{ font-family:var(--font-body); color:var(--text-muted); font-size:.8rem; }
+.acc-chev{ flex:none; color:var(--text-muted); transition:transform .3s ease; }
+.acc.open .acc-chev{ transform:rotate(180deg); }
+.acc-panel{ display:grid; grid-template-rows:0fr; transition:grid-template-rows .35s ease; }
+.acc.open .acc-panel{ grid-template-rows:1fr; }
+.acc-inner{ overflow:hidden; padding:0 18px; }
+.acc.open .acc-inner{ padding-bottom:18px; }
+.acc-inner p{ margin:4px 0 8px; }
+.g-h{ font-family:var(--font-head); font-size:.9rem; margin:20px 0 4px; color:var(--primary); }
+.g-list{ margin:6px 0 8px; padding-left:18px; font-size:.85rem; line-height:1.55; }
+.food-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(96px,1fr)); gap:10px; margin:10px 0 12px; }
+.food{ margin:0; border-radius:var(--radius-sm); overflow:hidden; background:var(--card-alt); border:1px solid var(--border); }
+.food img{ display:block; width:100%; aspect-ratio:4/3; object-fit:cover; }
+.food figcaption{ padding:6px 4px; text-align:center; font-size:.74rem; font-weight:700; line-height:1.2; }
+.food-grid.warn .food{ border-color:var(--danger); }
+.food-grid.aero img{ aspect-ratio:3/4; }
+.prec-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:10px; margin-top:8px; }
+.prec{ background:var(--card-alt); border:1px solid var(--border); border-radius:var(--radius-sm); padding:12px 14px; font-size:.88rem; }
+.g-note{ border-radius:var(--radius-sm); padding:12px 14px; font-size:.85rem; line-height:1.5; margin:12px 0; }
+.g-info{ background:rgba(96,165,250,.14); }
+.g-ok{ background:rgba(79,183,135,.16); }
+.g-warn{ background:rgba(242,153,74,.16); }
+.g-bad{ background:rgba(239,111,108,.15); }
+.g-note .g-list{ margin-bottom:0; }
+.two-col{ display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:10px; }
+.ex-item{ display:flex; gap:14px; align-items:flex-start; padding:12px 0; border-top:1px solid var(--border); }
+.ex-item img{ width:96px; height:96px; object-fit:cover; border-radius:var(--radius-sm); flex:none; }
+.ex-num{ width:96px; height:96px; flex:none; display:flex; align-items:center; justify-content:center; border-radius:var(--radius-sm); background:var(--accent-soft); color:var(--primary); font:700 1.8rem var(--font-head); }
+@media (max-width:480px){ .ex-item img,.ex-num{ width:72px; height:72px; } }
+@media (prefers-reduced-motion:reduce){ .acc-panel,.acc-chev{ transition:none; } }
+
+
+/* ---------- Consejos: tarjetas de colores que se adaptan al modo oscuro ---------- */
+.tip-blue{ background:linear-gradient(135deg,#dbeafe,#f0f7ff); }
+.tip-orange{ background:linear-gradient(135deg,#fff1e3,#fff8ef); }
+.tip-green{ background:linear-gradient(135deg,#e7f7f0,#f3fbf7); }
+html[data-theme="dark"] .tip-blue{ background:linear-gradient(135deg,rgba(96,165,250,.22),var(--card) 70%); }
+html[data-theme="dark"] .tip-orange{ background:linear-gradient(135deg,rgba(242,153,74,.20),var(--card) 70%); }
+html[data-theme="dark"] .tip-green{ background:linear-gradient(135deg,rgba(79,183,135,.20),var(--card) 70%); }
