@@ -1,15 +1,152 @@
 /* ===================================================================
    MigraSense — onboarding.js
-   Controla el flujo de preguntas de personalización (9 pasos),
-   guarda las respuestas y las persiste en localStorage al finalizar.
+   Cuestionario de personalización OBLIGATORIO (no se puede saltar).
+   - Las preguntas se definen en el arreglo QUESTIONS (abajo).
+   - Las preguntas con "showIf" solo aparecen si se respondió algo concreto.
+   - Al terminar, guarda todo en localStorage (ms_onboarding).
    =================================================================== */
 
 (function () {
-  const steps = Array.from(document.querySelectorAll('.onb-step'));
-  const total = steps.length;
-  let current = 1;
-  const answers = {};
+  // Login obligatorio: sin sesión no se puede responder el cuestionario
+  if (!MS.requireAuth({ requireOnboarding: false })) return;
 
+  /* ---------- Preguntas ---------- */
+  // type: 'single' (una opción) | 'multi' (varias). options: [valor, texto]
+  const QUESTIONS = [
+    { key: 'genero', icon: 'user', type: 'single',
+      title: '¿Con qué género te identificas?',
+      options: [['femenino', 'Femenino'], ['masculino', 'Masculino'], ['otro', 'Otro']] },
+
+    { key: 'ocupacion', icon: 'briefcase', type: 'single',
+      title: '¿Cuál es tu ocupación principal?',
+      options: [
+        ['estudiante', 'Estudiante'],
+        ['oficina_virtual', 'Trabajo de oficina o virtual'],
+        ['fisico_campo', 'Trabajo físico o de campo'],
+        ['turnos_nocturno', 'Trabajo por turnos o nocturno'],
+        ['hogar', 'Labores del hogar'],
+        ['sin_ocupacion', 'Sin ocupación actual']] },
+
+    { key: 'tiempoMigrana', icon: 'clock', type: 'single',
+      title: '¿Hace cuánto tiempo sufres migrañas?',
+      options: [['menos_1_anio', 'Menos de 1 año'], ['1_3_anios', '1 a 3 años'], ['4_10_anios', '4 a 10 años'], ['mas_10_anios', 'Más de 10 años']] },
+
+    { key: 'frecuencia', icon: 'calendar', type: 'single',
+      title: '¿Cada cuánto te da migraña?',
+      options: [
+        ['menos_1_mes', 'Menos de 1 vez al mes'],
+        ['1_3_mes', '1 a 3 veces al mes'],
+        ['1_2_semana', '1 a 2 veces por semana'],
+        ['3_mas_semana', '3 o más veces por semana'],
+        ['casi_diario', 'Casi todos los días']] },
+
+    { key: 'tieneOrden', icon: 'cycle', type: 'single',
+      title: '¿Tus migrañas tienen un orden de aparición?',
+      help: 'Es decir, ¿aparecen cada cierto número de meses o en ciertos meses?',
+      options: [['si', 'Sí'], ['no', 'No']] },
+
+    { key: 'ordenAparicion', icon: 'cycle', type: 'single',
+      showIf: { key: 'tieneOrden', value: 'si' },
+      title: '¿Cuál es el orden de aparición?',
+      options: [
+        ['2_3_meses', 'Cada 2 o 3 meses'],
+        ['4_5_meses', 'Cada 4 o 5 meses'],
+        ['6_7_meses', 'Cada 6 o 7 meses'],
+        ['8_9_meses', 'Cada 8 o 9 meses'],
+        ['9_10_meses', 'Cada 9 o 10 meses']] },
+
+    { key: 'momentoDia', icon: 'sun', type: 'single',
+      title: '¿En qué momentos del día suele comenzar?',
+      options: [
+        ['madrugada', 'Madrugada (00-06)'],
+        ['manana', 'Mañana (06-12)'],
+        ['tarde', 'Tarde (12-18)'],
+        ['noche', 'Noche (18-24)'],
+        ['sin_horario', 'Sin horario fijo']] },
+
+    { key: 'duracion', icon: 'stopwatch', type: 'single',
+      title: '¿Cuánto suele durar un episodio?',
+      options: [
+        ['menos_4h', 'Menos de 4 horas'],
+        ['4_12h', '4 a 12 horas'],
+        ['12_24h', '12 a 24 horas'],
+        ['1_3d', '1 a 3 días'],
+        ['mas_3d', 'Más de 3 días']] },
+
+    { key: 'intensidad', icon: 'gauge', type: 'single',
+      title: '¿Qué tan fuerte suele ser el dolor?',
+      options: [
+        ['leve', 'Leve (1-3)'],
+        ['moderada', 'Moderada (4-6)'],
+        ['intensa', 'Intensa (7-8)'],
+        ['muy_intensa', 'Muy intensa o incapacitante (9-10)']] },
+
+    { key: 'conocesProdromica', icon: 'bulb', type: 'single',
+      title: '¿Habías escuchado antes de la fase prodrómica?',
+      help: 'Son las señales de aviso que aparecen antes del dolor.',
+      options: [['si', 'Sí'], ['no', 'No'], ['no_seguro', 'No estoy seguro']] },
+
+    { key: 'sueno', icon: 'moon', type: 'single',
+      title: '¿Cuántas horas duermes en promedio por noche?',
+      options: [['menos_5', 'Menos de 5'], ['5_6', '5 a 6'], ['7_8', '7 a 8'], ['mas_8', 'Más de 8']] },
+
+    { key: 'estres', icon: 'bolt', type: 'single',
+      title: '¿Cómo describirías tu nivel de estrés habitual?',
+      options: [['bajo', 'Bajo'], ['moderado', 'Moderado'], ['alto', 'Alto'], ['muy_alto', 'Muy alto']] },
+
+    { key: 'cafeina', icon: 'cup', type: 'single',
+      title: '¿Consumes cafeína?',
+      help: 'Café, bebidas energéticas, gaseosas.',
+      options: [['si', 'Sí'], ['no', 'No']] },
+
+    { key: 'porcionesCafeina', icon: 'cup', type: 'single',
+      showIf: { key: 'cafeina', value: 'si' },
+      title: '¿Cuántas porciones al día?',
+      options: [['1', '1'], ['2_3', '2 a 3'], ['4_mas', '4 o más']] },
+
+    { key: 'condiciones', icon: 'heart', type: 'multi', exclusive: 'ninguna',
+      title: '¿Tienes alguna de estas condiciones?',
+      help: 'Puedes seleccionar más de una.',
+      options: [
+        ['ansiedad_depresion', 'Ansiedad o depresión'],
+        ['hipertension', 'Hipertensión'],
+        ['trastornos_sueno', 'Trastornos del sueño'],
+        ['hormonal', 'Alteraciones hormonales o ciclo irregular'],
+        ['alergias_sinusitis', 'Alergias o sinusitis crónica'],
+        ['ninguna', 'Ninguna'],
+        ['otra', 'Otra']] }
+  ];
+
+  /* ---------- Iconos (24x24) para la ilustración de cada pregunta ---------- */
+  const ICONS = {
+    user: '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/>',
+    briefcase: '<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/>',
+    clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+    calendar: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+    cycle: '<path d="M17 2l4 4-4 4"/><path d="M3 11V9a3 3 0 0 1 3-3h15"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v2a3 3 0 0 1-3 3H3"/>',
+    sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+    stopwatch: '<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2M9 2h6"/>',
+    gauge: '<path d="M4 17a8 8 0 1 1 16 0"/><path d="M12 17l4-5"/>',
+    bulb: '<path d="M12 3a6 6 0 0 0-3 11c1 .7 1 1.4 1 2h4c0-.6 0-1.3 1-2a6 6 0 0 0-3-11Z"/><path d="M10 21h4"/>',
+    moon: '<path d="M20 14a8 8 0 1 1-9-10 6.5 6.5 0 0 0 9 10Z"/>',
+    bolt: '<path d="M13 3 4 14h6l-1 7 9-11h-6l1-7Z"/>',
+    cup: '<path d="M4 8h13v6a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5V8Z"/><path d="M17 10h2a2 2 0 0 1 0 4h-2M7 2v3M11 2v3"/>',
+    heart: '<path d="M12 21s-8-5-8-11a4.5 4.5 0 0 1 8-3 4.5 4.5 0 0 1 8 3c0 6-8 11-8 11Z"/>'
+  };
+
+  function illustrationFor(icon) {
+    return `<svg viewBox="0 0 200 200" aria-hidden="true">
+      <circle cx="100" cy="100" r="92" fill="#eaf3ff"/>
+      <circle cx="100" cy="100" r="64" fill="#ffffff"/>
+      <g transform="translate(52 52) scale(4)" fill="none" stroke="#1d4ed8" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${ICONS[icon] || ''}</g>
+    </svg>`;
+  }
+
+  /* ---------- Estado ---------- */
+  const answers = {};   // { clave: valor | [valores] }
+  let idx = 0;          // posición dentro de las preguntas visibles
+
+  const host = document.getElementById('stepsHost');
   const stepLabel = document.getElementById('stepLabel');
   const progressFill = document.getElementById('progressFill');
   const dotsWrap = document.getElementById('dots');
@@ -17,232 +154,140 @@
   const nextBtn = document.getElementById('nextBtn');
   const illustration = document.getElementById('onbIllustration');
 
-  /* ---------- Ilustraciones simples por paso (SVG en línea) ---------- */
-  const ILLUSTRATIONS = [
-    // 1. Diagnóstico
-    `<svg viewBox="0 0 200 200"><circle cx="100" cy="100" r="92" fill="#eef0ff"/>
-     <path d="M100 55c-26 0-46 20-46 44 0 18 10 30 20 38v18h52v-18c10-8 20-20 20-38 0-24-20-44-46-44Z" fill="#c9d3fb"/>
-     <path d="M78 100h44M100 78v44" stroke="#4a5c82" stroke-width="6" stroke-linecap="round"/>
-     <circle cx="100" cy="100" r="10" fill="#8b9dfb"/></svg>`,
-    // 2. Datos personales
-    `<svg viewBox="0 0 200 200"><circle cx="100" cy="100" r="92" fill="#eef0ff"/>
-     <circle cx="100" cy="78" r="26" fill="#c9d3fb"/>
-     <path d="M56 152c6-26 24-40 44-40s38 14 44 40" fill="none" stroke="#4a5c82" stroke-width="7" stroke-linecap="round"/></svg>`,
-    // 3. Frecuencia
-    `<svg viewBox="0 0 200 200"><circle cx="100" cy="100" r="92" fill="#eef0ff"/>
-     <rect x="55" y="60" width="90" height="86" rx="14" fill="#fff"/>
-     <rect x="55" y="60" width="90" height="26" rx="14" fill="#8b9dfb"/>
-     <circle cx="80" cy="110" r="7" fill="#f2994a"/><circle cx="105" cy="110" r="7" fill="#c9d3fb"/><circle cx="130" cy="110" r="7" fill="#c9d3fb"/>
-     <circle cx="80" cy="130" r="7" fill="#c9d3fb"/><circle cx="105" cy="130" r="7" fill="#c9d3fb"/></svg>`,
-    // 4. Duración
-    `<svg viewBox="0 0 200 200"><circle cx="100" cy="100" r="92" fill="#eef0ff"/>
-     <circle cx="100" cy="104" r="46" fill="#fff" stroke="#c9d3fb" stroke-width="6"/>
-     <path d="M100 104V76M100 104l24 14" stroke="#4a5c82" stroke-width="7" stroke-linecap="round"/>
-     <path d="M84 54h32" stroke="#8b9dfb" stroke-width="7" stroke-linecap="round"/></svg>`,
-    // 5. Intensidad
-    `<svg viewBox="0 0 200 200"><circle cx="100" cy="100" r="92" fill="#eef0ff"/>
-     <path d="M56 120a44 44 0 0 1 88 0" fill="none" stroke="#c9d3fb" stroke-width="10" stroke-linecap="round"/>
-     <path d="M56 120a44 44 0 0 1 60-40" fill="none" stroke="#f2994a" stroke-width="10" stroke-linecap="round"/>
-     <circle cx="100" cy="120" r="7" fill="#4a5c82"/><path d="M100 120 122 96" stroke="#4a5c82" stroke-width="6" stroke-linecap="round"/></svg>`,
-    // 6. Disparadores
-    `<svg viewBox="0 0 200 200"><circle cx="100" cy="100" r="92" fill="#eef0ff"/>
-     <path d="M60 120a24 24 0 0 1 4-47 30 30 0 0 1 58-8 26 26 0 0 1 20 45 20 20 0 0 1-4 40H70a20 20 0 0 1-10-30Z" fill="#fff" stroke="#c9d3fb" stroke-width="5"/>
-     <path d="M76 140l-6 16M100 140v18M124 140l6 16" stroke="#8b9dfb" stroke-width="6" stroke-linecap="round"/></svg>`,
-    // 7. Prodrómicos
-    `<svg viewBox="0 0 200 200"><circle cx="100" cy="100" r="92" fill="#eef0ff"/>
-     <path d="M100 55c-26 0-46 20-46 44 0 18 10 30 20 38v18h52v-18c10-8 20-20 20-38 0-24-20-44-46-44Z" fill="#fff" stroke="#c9d3fb" stroke-width="5"/>
-     <path d="M78 92c6-8 14-8 20 0M102 92c6-8 14-8 20 0" stroke="#4a5c82" stroke-width="6" stroke-linecap="round"/>
-     <path d="M82 112c8 8 28 8 36 0" stroke="#f2994a" stroke-width="6" stroke-linecap="round"/></svg>`,
-    // 8. Antecedentes
-    `<svg viewBox="0 0 200 200"><circle cx="100" cy="100" r="92" fill="#eef0ff"/>
-     <path d="M100 52 150 68v34c0 34-22 54-50 62-28-8-50-28-50-62V68Z" fill="#fff" stroke="#c9d3fb" stroke-width="5"/>
-     <path d="M84 100h32M100 84v32" stroke="#4a5c82" stroke-width="7" stroke-linecap="round"/></svg>`,
-    // 9. Recordatorios
-    `<svg viewBox="0 0 200 200"><circle cx="100" cy="100" r="92" fill="#eef0ff"/>
-     <path d="M70 118c0-24 12-40 30-40s30 16 30 40l8 16H62Z" fill="#fff" stroke="#c9d3fb" stroke-width="5"/>
-     <path d="M92 142a8 8 0 0 0 16 0" stroke="#4a5c82" stroke-width="6" stroke-linecap="round"/>
-     <circle cx="132" cy="70" r="9" fill="#f2994a"/></svg>`
-  ];
+  // Preguntas que se deben mostrar según lo respondido hasta ahora
+  const visible = () => QUESTIONS.filter(q => !q.showIf || answers[q.showIf.key] === q.showIf.value);
 
-  /* ---------- Catálogos dinámicos (disparadores y prodrómicos) ---------- */
-  const ICONS = {
-    brain: '<path d="M9 4a3 3 0 0 0-3 3 3 3 0 0 0-1 5.8 3 3 0 0 0 4 4.2h2V4Z"/><path d="M15 4a3 3 0 0 1 3 3 3 3 0 0 1 1 5.8 3 3 0 0 1-4 4.2h-2V4Z"/>',
-    moon: '<path d="M20 14a8 8 0 1 1-9-10 6.5 6.5 0 0 0 9 10Z"/>',
-    food: '<path d="M6 3v7a2 2 0 0 0 4 0V3M8 10v11M17 3c-2 1-3 3-3 6s1 5 3 6v6"/>',
-    wave: '<path d="M3 12c2-4 4-4 6 0s4 4 6 0 4-4 6 0"/>',
-    drop: '<path d="M12 3s7 8 7 13a7 7 0 0 1-14 0c0-5 7-13 7-13Z"/>',
-    cloud: '<path d="M7 18a4 4 0 1 1 1-7.9A5 5 0 0 1 18 12a3.5 3.5 0 0 1-1 6.9H7Z"/>',
-    screen: '<rect x="3" y="5" width="18" height="12" rx="2"/><path d="M8 21h8M12 17v4"/>',
-    clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/>',
-    bolt: '<path d="M13 3 4 14h6l-1 7 9-11h-6l1-7Z"/>'
-  };
+  const isAnswered = q => q.type === 'multi'
+    ? Array.isArray(answers[q.key]) && answers[q.key].length > 0
+    : answers[q.key] !== undefined;
 
-  const triggerGrid = document.getElementById('triggerGrid');
-  if (triggerGrid) {
-    MS_TRIGGERS.forEach(t => {
+  // Si cambia una respuesta, se borran las respuestas de preguntas que ya no aplican
+  function pruneHiddenAnswers() {
+    QUESTIONS.forEach(q => {
+      if (q.showIf && answers[q.showIf.key] !== q.showIf.value) delete answers[q.key];
+    });
+  }
+
+  /* ---------- Dibujar la pregunta actual ---------- */
+  function render() {
+    const list = visible();
+    if (idx > list.length - 1) idx = list.length - 1;
+    const q = list[idx];
+
+    host.innerHTML = '';
+    const section = document.createElement('section');
+    section.className = 'onb-step onb-step-enter';
+
+    const h = document.createElement('h2');
+    h.className = 'onb-question';
+    h.textContent = q.title;
+    section.appendChild(h);
+
+    if (q.help) {
+      const p = document.createElement('p');
+      p.className = 'onb-help';
+      p.textContent = q.help;
+      section.appendChild(p);
+    }
+
+    const grid = document.createElement('div');
+    grid.className = 'chip-grid';
+    q.options.forEach(([value, text]) => {
       const label = document.createElement('label');
       label.className = 'chip';
-      label.dataset.value = t.id;
-      label.innerHTML = `<input type="checkbox">${t.label}`;
-      triggerGrid.appendChild(label);
+      label.dataset.value = value;
+      const input = document.createElement('input');
+      input.type = q.type === 'multi' ? 'checkbox' : 'radio';
+      input.name = q.key;
+
+      const current = answers[q.key];
+      const selected = q.type === 'multi' ? (current || []).includes(value) : current === value;
+      if (selected) { input.checked = true; label.classList.add('selected'); }
+
+      // Se escucha 'change' (no 'click') para evitar el doble disparo del <label>
+      input.addEventListener('change', () => onPick(q, value, input, grid));
+      label.appendChild(input);
+      label.appendChild(document.createTextNode(text));
+      grid.appendChild(label);
     });
-  }
+    section.appendChild(grid);
+    host.appendChild(section);
 
-  const prodromicList = document.getElementById('prodromicList');
-  if (prodromicList) {
-    MS_PRODROMICOS.forEach(p => {
-      const label = document.createElement('label');
-      label.className = 'option-card multi';
-      label.dataset.value = p.id;
-      label.innerHTML = `
-        <input type="checkbox">
-        <span class="oc-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/></svg></span>
-        <span class="oc-text">${p.label}</span>
-        <span class="oc-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg></span>`;
-      prodromicList.appendChild(label);
-    });
-  }
-
-  /* ---------- Dots ---------- */
-  for (let i = 1; i <= total; i++) {
-    const dot = document.createElement('span');
-    if (i === 1) dot.classList.add('on');
-    dotsWrap.appendChild(dot);
-  }
-
-  /* ---------- Agrupar claves dentro de un paso ---------- */
-  function getGroups(stepEl) {
-    const groups = [];
-    if (stepEl.dataset.key) groups.push({ el: stepEl, key: stepEl.dataset.key, type: stepEl.dataset.type });
-    stepEl.querySelectorAll('[data-key][data-type]').forEach(g => {
-      if (g !== stepEl) groups.push({ el: g, key: g.dataset.key, type: g.dataset.type });
-    });
-    return groups;
-  }
-
-  function isStepComplete(stepEl) {
-    const groups = getGroups(stepEl);
-    if (groups.length === 0) return true; // paso 9 se valida aparte (tiene default)
-    return groups.every(g => {
-      if (g.type === 'scale') return true;
-      if (g.type === 'multi') return Array.isArray(answers[g.key]) && answers[g.key].length > 0;
-      return answers[g.key] !== undefined && answers[g.key] !== null;
-    });
-  }
-
-  /* ---------- Selección: .chip / .option-card ----------
-     IMPORTANTE: escuchamos 'change' en el <input> (no 'click' en el
-     <label>). Un <label> que envuelve un <input> reenvía un click
-     sintético al input al activarse; si escucháramos 'click' en el
-     label, ese click sintético volvería a burbujear por el label y
-     el handler se ejecutaría DOS veces por cada toque, deshaciendo
-     la selección (por eso antes "no dejaba elegir"). 'change' solo
-     se dispara una vez por cada cambio real de estado. */
-  document.querySelectorAll('.chip, .option-card').forEach(el => {
-    // Determina el contenedor (grupo) y su tipo/clave
-    const group = el.closest('[data-key][data-type]') || el.closest('.onb-step');
-    const key = group ? group.dataset.key : null;
-    const type = group ? group.dataset.type : null;
-    const input = el.querySelector('input');
-    if (!key || !input) return;
-
-    input.addEventListener('change', () => {
-      if (type === 'multi') {
-        el.classList.toggle('selected', input.checked);
-        const arr = new Set(answers[key] || []);
-        if (input.checked) arr.add(el.dataset.value);
-        else arr.delete(el.dataset.value);
-        answers[key] = Array.from(arr);
-      } else {
-        group.querySelectorAll('.chip, .option-card').forEach(o => o.classList.remove('selected'));
-        el.classList.add('selected');
-        answers[key] = el.dataset.value;
-      }
-      refreshNextState();
-    });
-  });
-
-  /* ---------- Slider de intensidad ---------- */
-  const scaleInput = document.getElementById('scaleInput');
-  if (scaleInput) {
-    const scaleValue = document.getElementById('scaleValue');
-    const scaleCaption = document.getElementById('scaleCaption');
-    const captionFor = v => v <= 3 ? 'Dolor leve' : v <= 6 ? 'Dolor moderado' : v <= 8 ? 'Dolor intenso' : 'Dolor incapacitante';
-    answers.intensidad = Number(scaleInput.value);
-    scaleInput.addEventListener('input', () => {
-      scaleValue.textContent = scaleInput.value;
-      scaleCaption.textContent = captionFor(Number(scaleInput.value));
-      answers.intensidad = Number(scaleInput.value);
-    });
-  }
-
-  /* ---------- Recordatorio (paso 9) ---------- */
-  const recordatorioToggle = document.getElementById('recordatorioToggle');
-  if (recordatorioToggle) {
-    answers.recordatorio = recordatorioToggle.checked;
-    recordatorioToggle.addEventListener('change', () => { answers.recordatorio = recordatorioToggle.checked; });
-  }
-  // Valor por defecto pre-seleccionado en el HTML (horario = mañana)
-  const preselected = document.querySelector('.chip.selected[data-value]');
-  if (preselected) {
-    const group = preselected.closest('[data-key][data-type]');
-    if (group) answers[group.dataset.key] = preselected.dataset.value;
-  }
-
-  /* ---------- Navegación ---------- */
-  function refreshNextState() {
-    const stepEl = steps[current - 1];
-    nextBtn.disabled = !isStepComplete(stepEl);
-  }
-
-  function renderStep() {
-    steps.forEach(s => s.style.display = 'none');
-    const activeStep = steps[current - 1];
-    activeStep.style.display = '';
-    activeStep.classList.remove('onb-step-enter');
-    // Forzar reflow para reiniciar la animación de entrada en cada paso
-    void activeStep.offsetWidth;
-    activeStep.classList.add('onb-step-enter');
-    stepLabel.textContent = `${current} de ${total}`;
-    progressFill.style.width = `${(current / total) * 100}%`;
-    illustration.innerHTML = ILLUSTRATIONS[current - 1] || '';
-    prevBtn.style.visibility = current === 1 ? 'hidden' : 'visible';
-    nextBtn.textContent = current === total ? 'Finalizar' : 'Continuar';
-    Array.from(dotsWrap.children).forEach((d, i) => d.classList.toggle('on', i === current - 1));
-    refreshNextState();
+    illustration.innerHTML = illustrationFor(q.icon);
+    refreshChrome(list);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  document.getElementById('nextBtn').addEventListener('click', () => {
-    if (nextBtn.disabled) return;
-    if (current < total) {
-      current++;
-      renderStep();
+  function onPick(q, value, input, grid) {
+    if (q.type === 'multi') {
+      let arr = new Set(answers[q.key] || []);
+      if (input.checked) {
+        if (q.exclusive && value === q.exclusive) arr = new Set([value]);   // "Ninguna" quita el resto
+        else if (q.exclusive) arr.delete(q.exclusive);                       // otra opción quita "Ninguna"
+        arr.add(value);
+      } else {
+        arr.delete(value);
+      }
+      answers[q.key] = Array.from(arr);
+      grid.querySelectorAll('.chip').forEach(l => {
+        const on = arr.has(l.dataset.value);
+        l.classList.toggle('selected', on);
+        l.querySelector('input').checked = on;
+      });
     } else {
-      finishOnboarding();
+      answers[q.key] = value;
+      grid.querySelectorAll('.chip').forEach(l => l.classList.toggle('selected', l.dataset.value === value));
+      pruneHiddenAnswers();
     }
+    refreshChrome(visible());
+  }
+
+  /* ---------- Progreso, botones y puntos ---------- */
+  function refreshChrome(list) {
+    const q = list[idx];
+    const total = list.length;
+    stepLabel.textContent = `${idx + 1} de ${total}`;
+    progressFill.style.width = `${((idx + 1) / total) * 100}%`;
+    prevBtn.style.visibility = idx === 0 ? 'hidden' : 'visible';
+    nextBtn.textContent = idx === total - 1 ? 'Finalizar' : 'Continuar';
+    nextBtn.disabled = !isAnswered(q);   // obligatorio: no avanza sin responder
+
+    dotsWrap.innerHTML = '';
+    list.forEach((_, i) => {
+      const dot = document.createElement('span');
+      if (i === idx) dot.classList.add('on');
+      dotsWrap.appendChild(dot);
+    });
+  }
+
+  /* ---------- Navegación ---------- */
+  nextBtn.addEventListener('click', () => {
+    const list = visible();
+    if (!isAnswered(list[idx])) return;
+    if (idx < list.length - 1) { idx++; render(); }
+    else finish(list);
   });
 
-  document.getElementById('prevBtn').addEventListener('click', () => {
-    if (current > 1) { current--; renderStep(); }
-  });
+  prevBtn.addEventListener('click', () => { if (idx > 0) { idx--; render(); } });
 
   document.getElementById('backBtn').addEventListener('click', () => {
-    if (current > 1) { current--; renderStep(); }
-    else { window.location.href = 'login.html'; }
+    if (idx > 0) { idx--; render(); }
   });
 
-  document.getElementById('skipLink').addEventListener('click', (e) => {
-    e.preventDefault();
-    finishOnboarding(true);
-  });
-
-  function finishOnboarding(skipped = false) {
-    const data = { ...answers, completedAt: new Date().toISOString(), skipped };
+  /* ---------- Guardar ---------- */
+  function finish(list) {
+    // Además del valor, se guarda el texto legible (labels) para mostrarlo en el perfil
+    const labels = {};
+    list.forEach(q => {
+      const textOf = v => (q.options.find(o => o[0] === v) || [v, v])[1];
+      const a = answers[q.key];
+      labels[q.key] = Array.isArray(a) ? a.map(textOf) : textOf(a);
+    });
+    const data = { ...answers, labels, version: 2, completedAt: new Date().toISOString() };
     MS.set(MS_KEYS.ONBOARDING, data);
-    msToast(skipped ? 'Podrás completarlo luego desde tu perfil' : '¡Todo listo! Personalizando tu experiencia…', '✨');
+    msToast('¡Todo listo! Personalizando tu experiencia…', '✨');
     setTimeout(() => { window.location.href = 'dashboard.html'; }, 700);
   }
 
-  renderStep();
+  render();
 })();

@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const records = MS.get(MS_KEYS.RECORDS, []);
 
   document.getElementById('greetName').textContent = user ? user.name.split(' ')[0] : 'Invitado/a';
-  document.getElementById('avatarBtn').textContent = MS.initials(user ? user.name : 'MS');
+  document.getElementById('avatarImg').src = MS.avatarSrc(user);
 
   /* ---------- Riesgo estimado (demostrativo, basado en registros recientes) ---------- */
   const last7 = records.filter(r => (Date.now() - new Date(r.date).getTime()) < 7 * 86400000);
@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
   } else if (last7.length >= 1) {
     riskLevel = 'moderado'; riskPct = 52; riskText = 'Riesgo moderado de migraña';
     riskDesc = 'Se detectaron algunos patrones que podrían indicar un episodio.';
-  } else if (onboarding.intensidad >= 7) {
+  } else if (onboarding.intensidad === 'intensa' || onboarding.intensidad === 'muy_intensa') {
     riskLevel = 'moderado'; riskPct = 45; riskText = 'Riesgo moderado de migraña';
     riskDesc = 'Según tu perfil, tus episodios suelen ser intensos. Registra a tiempo.';
   }

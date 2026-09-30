@@ -910,3 +910,193 @@ html[data-theme="dark"] .auth-blob.b2{ background:rgba(255,255,255,.04); }
 .theme-fab .opt-light{ display:none; }
 html[data-theme="dark"] .theme-fab .opt-dark{ display:none; }
 html[data-theme="dark"] .theme-fab .opt-light{ display:flex; }
+/* =====================================================================
+   PALETA AZUL  (pegar AL FINAL de style.css)
+   Reemplaza los morados/lilas por azules. Se puede ajustar todo desde aquí.
+   ===================================================================== */
+:root{
+  --bg-grad-1:#eef5ff;
+  --bg-grad-2:#dbeafe;
+  --bg-grad-3:#e8f3ff;
+
+  --primary:#1d4ed8;
+  --primary-dark:#1e3a8a;
+  --primary-light:#3b82f6;
+
+  --accent:#60a5fa;
+  --accent-soft:#eaf3ff;
+  --accent-strong:#2563eb;
+
+  --card-alt:#f3f8ff;
+  --border:#dbe7fa;
+
+  --text:#1e2f4f;
+  --text-muted:#5f7396;
+  --text-faint:#9db0cf;
+
+  --shadow-sm:0 4px 14px rgba(29,78,216,.08);
+  --shadow-md:0 12px 30px rgba(29,78,216,.14);
+  --shadow-btn:0 10px 22px rgba(29,78,216,.28);
+}
+body{
+  background:
+    radial-gradient(circle at 15% 0%, #e0efff 0%, transparent 45%),
+    radial-gradient(circle at 90% 10%, #dbeafe 0%, transparent 40%),
+    linear-gradient(160deg, var(--bg-grad-1), var(--bg-grad-2) 55%, var(--bg-grad-3));
+}
+body::before{ background:#93c5fd; }
+body::after{ background:#7dd3fc; }
+.predict-card{ background:linear-gradient(135deg,#dbeafe,#eaf3ff 60%,#f0f7ff); }
+.tips-hero{ background:linear-gradient(135deg,#eaf3ff,#f0f7ff); }
+.avatar-ring{ background:conic-gradient(from 0deg,#60a5fa 0%,#2563eb 35%,#93c5fd 65%,#60a5fa 100%); }
+.bottom-nav{ box-shadow:0 -10px 30px rgba(29,78,216,.08); }
+
+/* ---- Modo oscuro en azules ---- */
+html[data-theme="dark"]{
+  --bg-grad-1:#0b1424;
+  --bg-grad-2:#0f1c33;
+  --bg-grad-3:#0a111f;
+
+  --primary:#8fb8ff;
+  --primary-dark:#5b94f0;
+  --primary-light:#b5d0ff;
+
+  --accent:#5b9bff;
+  --accent-soft:#15284b;
+  --accent-strong:#7db0ff;
+
+  --card:#12203a;
+  --card-alt:#182a4a;
+  --border:#233a5e;
+
+  --text:#e6eefc;
+  --text-muted:#9db3d6;
+  --text-faint:#6f86ab;
+
+  --shadow-sm:0 4px 14px rgba(0,0,0,.30);
+  --shadow-md:0 12px 30px rgba(0,0,0,.40);
+  --shadow-btn:0 10px 22px rgba(59,130,246,.35);
+}
+html[data-theme="dark"] body{
+  background:
+    radial-gradient(circle at 15% 0%, rgba(96,165,250,.12) 0%, transparent 45%),
+    radial-gradient(circle at 90% 10%, rgba(56,189,248,.08) 0%, transparent 40%),
+    linear-gradient(160deg, var(--bg-grad-1), var(--bg-grad-2) 55%, var(--bg-grad-3));
+}
+html[data-theme="dark"] body::before{ background:#1e3a8a; opacity:.35; }
+html[data-theme="dark"] body::after{ background:#0c4a6e; opacity:.3; }
+html[data-theme="dark"] .predict-card{ background:linear-gradient(135deg,#16305c,#12264a 60%,#0f2040); }
+html[data-theme="dark"] .tips-hero{ background:linear-gradient(135deg,#16305c,#0f2040); }
+
+/* ---- Imágenes: avatar (foto de perfil) y escudo de login/registro ---- */
+.avatar{ overflow:hidden; padding:0; background:var(--accent-soft); }
+.avatar img{ width:100%; height:100%; object-fit:cover; display:block; }
+.profile-avatar{ width:96px; height:96px; overflow:hidden; background:var(--accent-soft); }
+.profile-avatar img{ width:100%; height:100%; object-fit:cover; display:block; }
+.avatar-actions{ display:flex; gap:8px; justify-content:center; flex-wrap:wrap; }
+
+.auth-visual .auth-illustration img{
+  width:150px; height:150px; display:block;
+  filter:drop-shadow(0 12px 20px rgba(0,0,0,.18));
+}
+@media (min-width:560px){
+  .app-shell.no-nav.auth-split .auth-illustration img{ width:130px; height:130px; }
+}
+
+/* ---- Escudo en la tarjeta de riesgo y en Consejos ---- */
+img.predict-icon{ width:84px; height:84px; flex:none; object-fit:contain; border-radius:20px; }
+.tips-hero img{ width:64px; height:64px; flex:none; object-fit:contain; border-radius:16px; }
+
+/* =====================================================================
+   EFECTOS VISUALES  (pegar AL FINAL de style.css)
+   Solo CSS. Se apagan solos con "reducir movimiento" del sistema.
+   ===================================================================== */
+
+/* Brillo suave permanente en el escudo */
+img.predict-icon,
+.tips-hero img,
+.auth-visual .auth-illustration img{
+  box-shadow:0 10px 26px rgba(37,99,235,.28);
+}
+
+@media (prefers-reduced-motion:no-preference){
+
+  /* --- Escudo: flota y emite un halo que se expande --- */
+  img.predict-icon{ animation:msFloat 4s ease-in-out infinite, msHalo 2.8s ease-out infinite; }
+  .tips-hero img{ animation:msFloat 4.6s ease-in-out infinite, msHalo 3.2s ease-out infinite; }
+  .auth-visual .auth-illustration img{ animation:msFloat 4.4s ease-in-out infinite; }
+  @keyframes msFloat{
+    0%,100%{ transform:translateY(0) rotate(0deg); }
+    50%{ transform:translateY(-8px) rotate(-1.5deg); }
+  }
+  @keyframes msHalo{
+    0%{ box-shadow:0 10px 26px rgba(37,99,235,.28), 0 0 0 0 rgba(96,165,250,.55); }
+    70%{ box-shadow:0 10px 26px rgba(37,99,235,.28), 0 0 0 22px rgba(96,165,250,0); }
+    100%{ box-shadow:0 10px 26px rgba(37,99,235,.28), 0 0 0 0 rgba(96,165,250,0); }
+  }
+
+  /* --- Tarjeta de riesgo: degradado que respira + destello --- */
+  .predict-card{
+    background-size:200% 200%;
+    animation:msRise .5s cubic-bezier(.22,.68,.36,1) both, msGradient 9s ease-in-out infinite;
+  }
+  @keyframes msGradient{
+    0%,100%{ background-position:0% 50%; }
+    50%{ background-position:100% 50%; }
+  }
+  .predict-card::after{
+    content:""; position:absolute; top:-60%; left:-40%; width:40%; height:220%;
+    background:linear-gradient(90deg, transparent, rgba(255,255,255,.55), transparent);
+    transform:rotate(18deg); pointer-events:none;
+    animation:msShine 6s ease-in-out infinite;
+  }
+  @keyframes msShine{
+    0%,60%{ left:-50%; }
+    100%{ left:130%; }
+  }
+
+  /* --- Barra de riesgo con brillo en movimiento --- */
+  .risk-bar-fill{
+    background-image:linear-gradient(90deg, var(--orange), #ffd08a, var(--orange));
+    background-size:200% 100%;
+    animation:msBarFlow 2.6s linear infinite;
+  }
+  @keyframes msBarFlow{ to{ background-position:-200% 0; } }
+
+  /* --- Tarjetas: se elevan al pasar el mouse --- */
+  .card, .quick-item, .mini-card, .option-card, .chip{
+    transition:transform .2s ease, box-shadow .2s ease, border-color .2s ease, background .2s ease;
+  }
+  .card:hover, .mini-card:hover{ transform:translateY(-3px); box-shadow:var(--shadow-md); }
+  .quick-item:hover{ transform:translateY(-5px) scale(1.02); box-shadow:var(--shadow-md); }
+  .chip:hover{ transform:translateY(-2px); border-color:var(--accent); color:var(--primary); }
+  .chip.selected:hover{ color:#fff; }
+  .chip.selected{ animation:msPop .28s cubic-bezier(.34,1.56,.64,1); }
+  @keyframes msPop{ 0%{ transform:scale(.92); } 100%{ transform:scale(1); } }
+
+  /* --- Botón principal: brillo que cruza al pasar el mouse --- */
+  .btn-primary{ position:relative; overflow:hidden; }
+  .btn-primary::after{
+    content:""; position:absolute; top:0; left:-75%; width:50%; height:100%;
+    background:linear-gradient(90deg, transparent, rgba(255,255,255,.4), transparent);
+    transform:skewX(-20deg); pointer-events:none;
+  }
+  .btn-primary:hover:not(:disabled)::after{ animation:msBtnShine .7s ease; }
+  .btn-primary:hover:not(:disabled){ box-shadow:0 14px 28px rgba(29,78,216,.38); transform:translateY(-1px); }
+  @keyframes msBtnShine{ to{ left:130%; } }
+
+  /* --- Manchas de fondo que flotan despacio --- */
+  body::before{ animation:msBlobA 16s ease-in-out infinite; }
+  body::after{ animation:msBlobB 19s ease-in-out infinite; }
+  @keyframes msBlobA{ 0%,100%{ transform:translate(0,0); } 50%{ transform:translate(60px,40px); } }
+  @keyframes msBlobB{ 0%,100%{ transform:translate(0,0); } 50%{ transform:translate(-50px,-40px); } }
+
+  /* --- Foto de perfil: el anillo gira lentamente --- */
+  .avatar-ring{ animation:msSpin 14s linear infinite; }
+  .avatar-ring::before,
+  .avatar-ring .profile-avatar{ animation:msSpin 14s linear infinite reverse; }
+  @keyframes msSpin{ to{ transform:rotate(360deg); } }
+
+  /* --- Barra de progreso del cuestionario: transición suave --- */
+  .progress-fill{ transition:width .5s cubic-bezier(.22,.68,.36,1); }
+}

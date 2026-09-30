@@ -28,11 +28,20 @@ const MS = {
 
   getUser() { return this.get(MS_KEYS.USER); },
   isLoggedIn() { return !!this.get(MS_KEYS.SESSION); },
-  hasOnboarding() { return !!this.get(MS_KEYS.ONBOARDING); },
+  // El cuestionario solo cuenta si es la versión nueva y fue completado (no se puede saltar)
+  hasOnboarding() {
+    const o = this.get(MS_KEYS.ONBOARDING);
+    return !!o && o.version === 2 && !o.skipped;
+  },
 
   logout() {
     MS.remove(MS_KEYS.SESSION);
     window.location.href = 'login.html';
+  },
+
+  // Foto de perfil elegida por el usuario, o la imagen predeterminada
+  avatarSrc(user) {
+    return (user && user.photo) ? user.photo : 'assets/img/avatar-default.png';
   },
 
   initials(name) {

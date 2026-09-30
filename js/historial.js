@@ -29,7 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
     filtered.forEach(r => {
       const item = document.createElement('div');
       item.className = 'record-item';
-      const bg = r.type === 'episodio' ? 'linear-gradient(135deg,#f2994a,#f2b26a)' : 'linear-gradient(135deg,#8b9dfb,#6c7fe8)';
+      const bg = r.type === 'episodio' ? 'linear-gradient(135deg,#f2994a,#f2b26a)' : 'linear-gradient(135deg,#60a5fa,#2563eb)';
       const detalle = r.type === 'episodio'
         ? `${(r.sintomas || []).slice(0, 2).join(', ') || 'Sin síntomas detallados'}${r.duracion ? ' · ' + r.duracion.replace(/_/g, ' ') : ''}`
         : (r.sintomas || []).slice(0, 3).join(', ') || 'Sin detalle';

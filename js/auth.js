@@ -165,6 +165,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const trimmedName = name.trim();
 
+      // Cuenta nueva = cuestionario nuevo (evita heredar respuestas de otra persona)
+      MS.remove(MS_KEYS.ONBOARDING);
       MS.set(MS_KEYS.USER, { name: trimmedName, email, createdAt: new Date().toISOString() });
       MS.set(MS_KEYS.SESSION, { email, since: new Date().toISOString() });
 
@@ -190,6 +192,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // Si no existe un usuario registrado todavía, se crea uno de demostración
       let user = MS.getUser();
       if (!user || user.email !== email) {
+        MS.remove(MS_KEYS.ONBOARDING);
         user = { name: email.split('@')[0], email, createdAt: new Date().toISOString() };
         MS.set(MS_KEYS.USER, user);
       }
@@ -199,15 +202,6 @@ document.addEventListener('DOMContentLoaded', () => {
       setTimeout(() => {
         window.location.href = MS.hasOnboarding() ? 'dashboard.html' : 'onboarding.html';
       }, 500);
-    });
-  }
-
-  const guestBtn = document.getElementById('guestBtn');
-  if (guestBtn) {
-    guestBtn.addEventListener('click', () => {
-      MS.set(MS_KEYS.USER, { name: 'Invitado/a', email: 'invitado@migrasense.app', createdAt: new Date().toISOString() });
-      MS.set(MS_KEYS.SESSION, { email: 'invitado@migrasense.app', since: new Date().toISOString() });
-      window.location.href = 'onboarding.html';
     });
   }
 

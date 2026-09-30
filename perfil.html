@@ -56,7 +56,14 @@
 
     <div class="profile-head">
       <div class="avatar-ring">
-        <div class="profile-avatar" id="profileAvatar">--</div>
+        <div class="profile-avatar" id="profileAvatar">
+          <img id="profileAvatarImg" src="assets/img/avatar-default.png" alt="Foto de perfil">
+        </div>
+      </div>
+      <div class="avatar-actions">
+        <button type="button" class="btn btn-outline btn-sm" id="changePhotoBtn">Cambiar foto</button>
+        <button type="button" class="btn btn-ghost btn-sm" id="removePhotoBtn" style="display:none;">Quitar foto</button>
+        <input type="file" id="photoInput" accept="image/png,image/jpeg,image/webp" hidden>
       </div>
       <div class="center">
         <h3 id="profileName">—</h3>
@@ -88,15 +95,7 @@
 
     <div class="card mt-16">
       <h4 style="font-size:.9rem; margin-bottom:4px;">Perfil de migraña</h4>
-      <div class="settings-row">
-        <div class="settings-label">Diagnóstico previo<div class="settings-sub" id="infoDiagnostico">—</div></div>
-      </div>
-      <div class="settings-row">
-        <div class="settings-label">Frecuencia habitual<div class="settings-sub" id="infoFrecuencia">—</div></div>
-      </div>
-      <div class="settings-row">
-        <div class="settings-label">Intensidad habitual<div class="settings-sub" id="infoIntensidad">—</div></div>
-      </div>
+      <div id="migraineInfo"></div>
       <a href="onboarding.html" class="btn btn-ghost btn-sm mt-8">Volver a responder el cuestionario</a>
     </div>
 
