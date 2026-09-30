@@ -299,21 +299,114 @@ document.addEventListener('DOMContentLoaded', () => {
   load();
   render();
 
-  /* ---------- Generar reporte de texto ---------- */
+  /* ---------- Reporte (PDF real + versión .txt) ---------- */
+  const ETIQUETAS = { 30: 'Últimos 30 días', 90: 'Últimos 3 meses', 365: 'Últimos 12 meses', 0: 'Todo el historial' };
+  let reportDias = 90;
+  const reportModal = document.getElementById('reportModal');
+  const pdfBtn = document.getElementById('downloadPdfBtn');
+  const shareBtn = document.getElementById('sharePdfBtn');
+  const summaryBox = document.getElementById('reportSummary');
+
+  const recordsDelPeriodo = () => MSReportePDF.filtrar(MS.get(MS_KEYS.RECORDS, []), reportDias || null);
+
+  function pintarResumenReporte() {
+    const recs = recordsDelPeriodo();
+    const eps = recs.filter(r => r.type === 'episodio').length;
+    if (!recs.length) {
+      summaryBox.innerHTML = `<strong>${ETIQUETAS[reportDias]}</strong><br>No hay registros en este periodo. Elige uno más amplio.`;
+      pdfBtn.disabled = true;
+    } else {
+      summaryBox.innerHTML = `<strong>${ETIQUETAS[reportDias]}</strong><br>${recs.length} registro(s): ${eps} episodio(s) y ${recs.length - eps} de síntomas prodrómicos.`;
+      pdfBtn.disabled = false;
+    }
+  }
+
+  // Las librerías del PDF (~450 KB) se cargan solo al abrir el reporte por primera vez
+  function cargarScript(src) {
+    return new Promise((ok, fail) => {
+      const s = document.createElement('script');
+      s.src = src; s.onload = ok; s.onerror = () => fail(new Error('No se pudo cargar ' + src));
+      document.head.appendChild(s);
+    });
+  }
+  let libsPdf = null;
+  function cargarLibsPdf() {
+    if (window.jspdf && window.jspdf.jsPDF && window.jspdf.jsPDF.API.autoTable) return Promise.resolve();
+    if (!libsPdf) {
+      libsPdf = cargarScript('js/vendor/jspdf.umd.min.js')
+        .then(() => cargarScript('js/vendor/jspdf.plugin.autotable.min.js'))
+        .catch(e => { libsPdf = null; throw e; });
+    }
+    return libsPdf;
+  }
+  async function cargarLogo() {
+    try {
+      const blob = await (await fetch('assets/img/logo-icon.png')).blob();
+      return await new Promise(ok => { const fr = new FileReader(); fr.onload = () => ok(fr.result); fr.onerror = () => ok(null); fr.readAsDataURL(blob); });
+    } catch (e) { return null; }   // p. ej. al abrir con file://
+  }
+  async function crearPDF() {
+    await cargarLibsPdf();
+    return MSReportePDF.generar({
+      jsPDF: window.jspdf.jsPDF, user: MS.getUser(), onboarding: MS.get(MS_KEYS.ONBOARDING, {}),
+      records: MS.get(MS_KEYS.RECORDS, []), dias: reportDias || null, etiqueta: ETIQUETAS[reportDias], logo: await cargarLogo()
+    });
+  }
+
+  async function conEstado(btn, textoEspera, tarea) {
+    const original = btn.textContent;
+    btn.disabled = true; btn.textContent = textoEspera;
+    try { await tarea(); }
+    catch (e) { console.error(e); msToast('No se pudo generar el PDF. Revisa tu conexión e inténtalo de nuevo.', '⚠️'); }
+    finally { btn.textContent = original; btn.disabled = false; pintarResumenReporte(); }
+  }
+
+  document.getElementById('reportBtn').addEventListener('click', () => {
+    pintarResumenReporte();
+    reportModal.classList.add('show');
+    cargarLibsPdf().catch(() => {});                       // precarga mientras la persona elige el periodo
+    try {                                                  // "Compartir" solo si el dispositivo lo admite
+      const prueba = new File([''], 'a.pdf', { type: 'application/pdf' });
+      if (navigator.canShare && navigator.canShare({ files: [prueba] })) shareBtn.style.display = '';
+    } catch (e) { /* sin compartir */ }
+  });
+  reportModal.addEventListener('click', (e) => { if (e.target.id === 'reportModal') e.target.classList.remove('show'); });
+
+  document.getElementById('reportPeriod').addEventListener('click', (e) => {
+    const chip = e.target.closest('[data-dias]');
+    if (!chip) return;
+    document.querySelectorAll('#reportPeriod .filter-chip').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    reportDias = Number(chip.dataset.dias);
+    pintarResumenReporte();
+  });
+
+  pdfBtn.addEventListener('click', () => conEstado(pdfBtn, 'Generando…', async () => {
+    const doc = await crearPDF();
+    doc.save(MSReportePDF.nombreArchivo(MS.getUser()));
+    msToast('Reporte PDF descargado', '⬇️');
+  }));
+
+  shareBtn.addEventListener('click', () => conEstado(shareBtn, 'Preparando…', async () => {
+    const doc = await crearPDF();
+    const nombre = MSReportePDF.nombreArchivo(MS.getUser());
+    const file = new File([doc.output('blob')], nombre, { type: 'application/pdf' });
+    try { await navigator.share({ files: [file], title: 'Reporte MigraSense', text: 'Reporte de síntomas de migraña' }); }
+    catch (e) { if (e && e.name !== 'AbortError') throw e; }
+  }));
+
+  /* Versión de texto (respaldo) */
   function buildReportText() {
     const user = MS.getUser();
+    const recs = recordsDelPeriodo().reverse();
     let txt = `REPORTE DE SÍNTOMAS — MigraSense\n`;
     txt += `Paciente: ${user ? user.name : 'Invitado/a'}\n`;
+    txt += `Periodo: ${ETIQUETAS[reportDias]}\n`;
     txt += `Generado: ${new Date().toLocaleString('es-BO')}\n`;
-    txt += `Total de registros: ${records.length}\n`;
+    txt += `Total de registros: ${recs.length}\n`;
     txt += `----------------------------------------\n\n`;
-
-    if (records.length === 0) {
-      txt += 'Aún no hay registros guardados.\n';
-      return txt;
-    }
-
-    records.forEach(r => {
+    if (recs.length === 0) { txt += 'No hay registros en este periodo.\n'; return txt; }
+    recs.forEach(r => {
       txt += `• ${r.label} — ${new Date(r.date).toLocaleString('es-BO')}\n`;
       txt += `  Intensidad: ${r.intensidad}/10\n`;
       if (r.sintomas && r.sintomas.length) txt += `  Síntomas: ${r.sintomas.join(', ')}\n`;
@@ -323,20 +416,11 @@ document.addEventListener('DOMContentLoaded', () => {
       if (r.notas) txt += `  Notas: ${r.notas}\n`;
       txt += `\n`;
     });
-
     txt += `----------------------------------------\n`;
     txt += `Este reporte es generado automáticamente y no reemplaza una evaluación médica profesional.\n`;
     return txt;
   }
-
-  document.getElementById('reportBtn').addEventListener('click', () => {
-    document.getElementById('reportText').value = buildReportText();
-    document.getElementById('reportModal').classList.add('show');
-  });
-  document.getElementById('reportModal').addEventListener('click', (e) => {
-    if (e.target.id === 'reportModal') e.target.classList.remove('show');
-  });
-  document.getElementById('downloadReportBtn').addEventListener('click', () => {
+  document.getElementById('downloadTxtBtn').addEventListener('click', () => {
     const blob = new Blob([buildReportText()], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');

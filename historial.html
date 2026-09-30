@@ -5,6 +5,8 @@
 <title>Historial · MigraSense</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" href="assets/img/favicon-32.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#4a5c82">
 <link rel="stylesheet" href="css/style.css">
 <script>
 (function(){
@@ -121,18 +123,31 @@
 <div class="modal-overlay" id="reportModal">
   <div class="modal-sheet">
     <div class="modal-handle"></div>
-    <h3 style="margin-bottom:12px;">📄 Reporte de síntomas</h3>
-    <div class="textarea-wrap" style="padding:0;">
-      <textarea id="reportText" readonly style="min-height:220px; padding:14px; font-size:.8rem;"></textarea>
+    <h3 style="margin-bottom:4px;">📄 Reporte para tu médico</h3>
+    <p class="small muted">PDF con resumen, gráficos, patrones detectados y todos tus registros.</p>
+    <p class="small" style="margin:14px 0 8px; font-weight:700;">Periodo</p>
+    <div class="filter-row" id="reportPeriod" role="group" aria-label="Periodo del reporte">
+      <button type="button" class="filter-chip" data-dias="30">30 días</button>
+      <button type="button" class="filter-chip active" data-dias="90">3 meses</button>
+      <button type="button" class="filter-chip" data-dias="365">12 meses</button>
+      <button type="button" class="filter-chip" data-dias="0">Todo</button>
     </div>
+    <div class="report-summary" id="reportSummary" aria-live="polite"></div>
     <div class="btn-row mt-16">
       <button class="btn btn-outline" onclick="document.getElementById('reportModal').classList.remove('show')">Cerrar</button>
-      <button class="btn btn-primary" id="downloadReportBtn">Descargar .txt</button>
+      <button class="btn btn-primary" id="downloadPdfBtn">Descargar PDF</button>
+    </div>
+    <div class="report-extra">
+      <button type="button" class="btn btn-ghost btn-sm" id="sharePdfBtn" style="display:none;">Compartir…</button>
+      <button type="button" class="btn btn-ghost btn-sm" id="downloadTxtBtn">Versión .txt</button>
     </div>
   </div>
 </div>
 
 <script src="js/app.js"></script>
+<script src="js/analisis.js"></script>
+<script src="js/reporte-pdf.js"></script>
+<script src="js/recordatorios.js"></script>
 <script src="js/historial.js"></script>
 </body>
 </html>

@@ -5,6 +5,8 @@
 <title>Inicio · MigraSense</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" href="assets/img/favicon-32.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#4a5c82">
 <link rel="stylesheet" href="css/style.css">
 <script>
 (function(){
@@ -132,13 +134,14 @@
       <div class="mini-card">
         <h4>🔔 Recordatorios</h4>
         <ul class="mini-list">
-          <li>Registrar síntomas
-            <label class="switch"><input type="checkbox" id="remDaily" checked><span class="slider"></span></label>
+          <li><span>Registrar síntomas<small class="rem-when" id="remDailyWhen"></small></span>
+            <label class="switch"><input type="checkbox" id="remDaily" aria-label="Recordatorio diario"><span class="slider"></span></label>
           </li>
-          <li>Revisar patrones
-            <label class="switch"><input type="checkbox" id="remWeekly" checked><span class="slider"></span></label>
+          <li><span>Revisar patrones<small class="rem-when" id="remWeeklyWhen"></small></span>
+            <label class="switch"><input type="checkbox" id="remWeekly" aria-label="Recordatorio semanal"><span class="slider"></span></label>
           </li>
         </ul>
+        <a href="perfil.html#recordatorios" class="rem-link">Configurar horarios</a>
       </div>
     </div>
 
@@ -175,6 +178,7 @@
 
 <script src="js/app.js"></script>
 <script src="js/analisis.js"></script>
+<script src="js/recordatorios.js"></script>
 <script src="js/dashboard.js"></script>
 </body>
 </html>

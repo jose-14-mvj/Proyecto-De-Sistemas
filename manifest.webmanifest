@@ -1,0 +1,15 @@
+{
+  "name": "MigraSense",
+  "short_name": "MigraSense",
+  "description": "Registro de síntomas y prevención de migraña",
+  "lang": "es",
+  "start_url": "index.html",
+  "scope": ".",
+  "display": "standalone",
+  "background_color": "#eef1fc",
+  "theme_color": "#4a5c82",
+  "icons": [
+    { "src": "assets/img/logo-256.png", "sizes": "256x256", "type": "image/png" },
+    { "src": "assets/img/logo.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

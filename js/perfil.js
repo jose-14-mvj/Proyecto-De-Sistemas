@@ -124,16 +124,83 @@ document.addEventListener('DOMContentLoaded', () => {
     msToast('Perfil actualizado', '✅');
   });
 
-  /* ---------- Recordatorios ---------- */
-  const reminders = MS.get(MS_KEYS.REMINDERS, { daily: true, weekly: true });
-  document.getElementById('pRemDaily').checked = reminders.daily;
-  document.getElementById('pRemWeekly').checked = reminders.weekly;
-  document.getElementById('pRemDaily').addEventListener('change', (e) => {
-    reminders.daily = e.target.checked; MS.set(MS_KEYS.REMINDERS, reminders);
+  /* ---------- Recordatorios (lógica real en js/recordatorios.js) ---------- */
+  const $ = id => document.getElementById(id);
+  const remStatus = $('remStatus'), remNext = $('remNext'), remEnable = $('remEnableBtn'), remTest = $('remTestBtn');
+
+  const ESTADOS = {
+    granted: ['ok', 'Avisos del dispositivo activados. Te notificaremos a la hora elegida mientras MigraSense esté abierta o instalada.'],
+    denied: ['bad', 'Los avisos están bloqueados en este navegador. Habilítalos desde el candado junto a la dirección web. Mientras tanto verás los recordatorios dentro de la app.'],
+    default: ['warn', 'Los avisos del dispositivo aún no están activados. Verás los recordatorios dentro de la app.'],
+    'no-soportado': ['warn', 'Este navegador no admite avisos del dispositivo (en iPhone, instala MigraSense en la pantalla de inicio). Verás los recordatorios dentro de la app; usa el calendario para recibirlos con la app cerrada.']
+  };
+
+  function pintarRecordatorios() {
+    const s = MSRec.get();
+    $('pRemDaily').checked = s.daily.on;
+    $('pDailyTime').value = s.daily.time;
+    $('pRemWeekly').checked = s.weekly.on;
+    $('pWeeklyDay').value = String(s.weekly.day);
+    $('pWeeklyTime').value = s.weekly.time;
+    const p = MSRec.permiso();
+    const [estado, texto] = ESTADOS[p] || ESTADOS.default;
+    remStatus.dataset.estado = estado;
+    remStatus.textContent = texto;
+    remEnable.style.display = p === 'default' ? '' : 'none';
+    remNext.textContent = MSRec.textoProximo(s);
+  }
+  pintarRecordatorios();
+
+  async function activarSiHaceFalta() {
+    if (MSRec.permiso() === 'default') await MSRec.pedirPermiso();
+    pintarRecordatorios();
+  }
+  const HORA_OK = v => /^([01]\d|2[0-3]):[0-5]\d$/.test(v);
+
+  $('pRemDaily').addEventListener('change', async e => {
+    MSRec.update(s => { s.daily.on = e.target.checked; });
+    msToast(e.target.checked ? 'Recordatorio diario activado' : 'Recordatorio diario desactivado', '🔔');
+    if (e.target.checked) await activarSiHaceFalta();
+    pintarRecordatorios(); MSRec.comprobar();
   });
-  document.getElementById('pRemWeekly').addEventListener('change', (e) => {
-    reminders.weekly = e.target.checked; MS.set(MS_KEYS.REMINDERS, reminders);
+  $('pRemWeekly').addEventListener('change', async e => {
+    MSRec.update(s => { s.weekly.on = e.target.checked; });
+    msToast(e.target.checked ? 'Resumen semanal activado' : 'Resumen semanal desactivado', '🔔');
+    if (e.target.checked) await activarSiHaceFalta();
+    pintarRecordatorios(); MSRec.comprobar();
   });
+  $('pDailyTime').addEventListener('change', e => {
+    if (!HORA_OK(e.target.value)) { pintarRecordatorios(); return; }
+    MSRec.update(s => { s.daily.time = e.target.value; s.dismissedDaily = ''; s.notifiedDaily = ''; s.snoozeUntil = 0; });
+    pintarRecordatorios(); msToast(`Recordatorio diario a las ${e.target.value}`, '⏰'); MSRec.comprobar();
+  });
+  $('pWeeklyTime').addEventListener('change', e => {
+    if (!HORA_OK(e.target.value)) { pintarRecordatorios(); return; }
+    MSRec.update(s => { s.weekly.time = e.target.value; s.dismissedWeekly = ''; s.notifiedWeekly = ''; });
+    pintarRecordatorios(); msToast(`Resumen semanal a las ${e.target.value}`, '⏰'); MSRec.comprobar();
+  });
+  $('pWeeklyDay').addEventListener('change', e => {
+    MSRec.update(s => { s.weekly.day = Number(e.target.value); s.dismissedWeekly = ''; s.notifiedWeekly = ''; });
+    pintarRecordatorios(); MSRec.comprobar();
+  });
+
+  remEnable.addEventListener('click', async () => {
+    const p = await MSRec.pedirPermiso();
+    pintarRecordatorios();
+    if (p === 'granted') msToast('Avisos del dispositivo activados', '✅');
+  });
+  remTest.addEventListener('click', async () => {
+    const r = await MSRec.probar();
+    pintarRecordatorios();
+    if (r === 'ok') msToast('Notificación de prueba enviada', '🔔');
+    else if (r === 'denied') msToast('Las notificaciones están bloqueadas en este navegador', '⚠️');
+    else if (r === 'no-soportado') msToast('Este navegador no admite notificaciones; usa el calendario', '⚠️');
+    else msToast('No se pudo enviar la notificación', '⚠️');
+  });
+  $('remIcsBtn').addEventListener('click', () => {
+    if (MSRec.descargarICS()) msToast('Ábrelo para añadir los recordatorios a tu calendario', '📅');
+  });
+  if (location.hash === '#recordatorios') setTimeout(() => $('recordatorios').scrollIntoView({ behavior: 'smooth', block: 'start' }), 150);
 
   /* ---------- Cerrar sesión ---------- */
   document.getElementById('logoutBtn').addEventListener('click', () => {

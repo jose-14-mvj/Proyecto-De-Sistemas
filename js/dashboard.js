@@ -39,17 +39,32 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  /* ---------- Recordatorios ---------- */
-  const reminders = MS.get(MS_KEYS.REMINDERS, { daily: true, weekly: true });
-  document.getElementById('remDaily').checked = reminders.daily;
-  document.getElementById('remWeekly').checked = reminders.weekly;
-  document.getElementById('remDaily').addEventListener('change', (e) => {
-    reminders.daily = e.target.checked; MS.set(MS_KEYS.REMINDERS, reminders);
-    msToast(reminders.daily ? 'Recordatorio diario activado' : 'Recordatorio diario desactivado', '🔔');
-  });
-  document.getElementById('remWeekly').addEventListener('change', (e) => {
-    reminders.weekly = e.target.checked; MS.set(MS_KEYS.REMINDERS, reminders);
-  });
+  /* ---------- Recordatorios (lógica real en js/recordatorios.js) ---------- */
+  const remDaily = document.getElementById('remDaily');
+  const remWeekly = document.getElementById('remWeekly');
+  const DIA_TXT = ['domingos', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábados'];
+
+  function pintarRecordatorios() {
+    const s = MSRec.get();
+    remDaily.checked = s.daily.on;
+    remWeekly.checked = s.weekly.on;
+    document.getElementById('remDailyWhen').textContent = s.daily.on ? `Todos los días · ${s.daily.time}` : 'Desactivado';
+    document.getElementById('remWeeklyWhen').textContent = s.weekly.on ? `${DIA_TXT[s.weekly.day].replace(/^./, c => c.toUpperCase())} · ${s.weekly.time}` : 'Desactivado';
+  }
+  pintarRecordatorios();
+
+  async function cambiarRecordatorio(clave, activo, nombre) {
+    MSRec.update(s => { s[clave].on = activo; });
+    pintarRecordatorios();
+    msToast(`${nombre} ${activo ? 'activado' : 'desactivado'}`, '🔔');
+    if (activo && MSRec.permiso() === 'default') {
+      const p = await MSRec.pedirPermiso();
+      if (p === 'granted') msToast('Avisos del dispositivo activados', '✅');
+    }
+    MSRec.comprobar();
+  }
+  remDaily.addEventListener('change', e => cambiarRecordatorio('daily', e.target.checked, 'Recordatorio diario'));
+  remWeekly.addEventListener('change', e => cambiarRecordatorio('weekly', e.target.checked, 'Resumen semanal'));
 
   /* ---------- Detectar señales: riesgo explicado + patrones reales ---------- */
   const DIAS_CORTO = ['D', 'L', 'M', 'X', 'J', 'V', 'S'];

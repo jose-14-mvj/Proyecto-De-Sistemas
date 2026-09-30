@@ -1218,3 +1218,34 @@ html[data-theme="dark"] .tip-green{ background:linear-gradient(135deg,rgba(79,18
 .chip-row{ display:flex; flex-wrap:wrap; gap:6px; }
 .mini-chip{ background:var(--orange-soft); color:var(--orange); font-size:.75rem; font-weight:700; padding:4px 10px; border-radius:var(--radius-pill); }
 @media (max-width:480px){ img.predict-icon{ width:64px; height:64px; } .predict-title,.predict-desc{ max-width:none; } }
+
+/* ===================================================================
+   Recordatorios y reporte PDF
+   =================================================================== */
+.rem-banner{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin:14px 0 4px; padding:12px 14px; border-radius:var(--radius-md); background:var(--accent-soft); border:1.5px solid var(--accent); box-shadow:var(--shadow-sm); }
+.rem-banner-icon{ font-size:1.3rem; line-height:1; }
+.rem-banner-body{ flex:1 1 190px; display:flex; flex-direction:column; gap:2px; min-width:0; }
+.rem-banner-body strong{ font-family:var(--font-head); font-size:.86rem; color:var(--text); }
+.rem-banner-body span{ font-size:.78rem; color:var(--text-muted); line-height:1.4; }
+.rem-banner-actions{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.rem-x{ border:none; background:transparent; color:var(--text-muted); font-size:1.4rem; line-height:1; padding:2px 8px; border-radius:var(--radius-sm); }
+.rem-x:hover{ background:var(--card-alt); }
+.rem-x:focus-visible{ outline:2.5px solid var(--accent-strong); outline-offset:2px; }
+
+.rem-when{ display:block; font-size:.68rem; color:var(--text-faint); margin-top:1px; }
+.rem-link{ display:inline-block; margin-top:8px; font-size:.74rem; font-weight:700; color:var(--accent-strong); }
+.rem-link:hover{ text-decoration:underline; }
+
+.rem-controls{ display:flex; align-items:center; gap:10px; }
+.rem-time{ padding:7px 8px; border-radius:var(--radius-sm); border:1.5px solid var(--border); background:var(--card-alt); color:var(--text); font:inherit; font-size:.82rem; }
+.rem-time:focus-visible{ outline:2.5px solid var(--accent-strong); outline-offset:1px; }
+.rem-status{ margin:12px 0 4px; padding:10px 12px; border-radius:var(--radius-sm); font-size:.78rem; line-height:1.45; background:var(--card-alt); color:var(--text-muted); border:1px solid var(--border); }
+.rem-status[data-estado="ok"]{ background:var(--success-soft); color:var(--text); border-color:var(--success); }
+.rem-status[data-estado="bad"]{ background:var(--danger-soft); color:var(--text); border-color:var(--danger); }
+.rem-status[data-estado="warn"]{ background:var(--orange-soft); color:var(--text); border-color:var(--orange); }
+.rem-actions{ display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+
+.report-summary{ margin-top:12px; padding:12px 14px; border-radius:var(--radius-sm); background:var(--accent-soft); font-size:.84rem; line-height:1.5; color:var(--text); }
+#reportPeriod{ margin-bottom:0; }
+.report-extra{ display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; justify-content:center; }
+

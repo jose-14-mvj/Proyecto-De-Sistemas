@@ -43,10 +43,11 @@ index.html  →  login.html / register.html  →  onboarding.html (9 pasos)
   recordatorios.
 - **registro.html** — formulario de registro con dos pestañas:
   *Síntomas prodrómicos* y *Episodio de migraña completo*.
-- **historial.html** — lista filtrable de todos los registros, con
-  generación y descarga de un reporte en `.txt`.
+- **historial.html** — lista filtrable de todos los registros, gráficos,
+  calendario y **reporte en PDF** (periodo a elegir: 30 días, 3 meses,
+  12 meses o todo; se descarga o se comparte). Conserva una versión `.txt`.
 - **perfil.html** — edición de datos, resumen del perfil de migraña,
-  toggles de notificaciones y cierre de sesión.
+  **recordatorios con hora y día configurables** y cierre de sesión.
 - **consejos.html** — tips generales de bienestar (contenido propio).
 
 ## Las 9 preguntas del onboarding
@@ -91,7 +92,13 @@ MigraSense/
 │   ├── dashboard.js
 │   ├── registro.js
 │   ├── historial.js
-│   └── perfil.js
+│   ├── perfil.js
+│   ├── analisis.js       (riesgo y patrones)
+│   ├── reporte-pdf.js    (genera el reporte PDF)
+│   ├── recordatorios.js  (programación, notificaciones, .ics)
+│   └── vendor/           (jsPDF + AutoTable, MIT; sin depender de CDN)
+├── sw.js                 (Service Worker: muestra notificaciones)
+├── manifest.webmanifest  (permite instalar la app en el celular)
 └── assets/img/
     ├── logo.png          (logo recortado y con fondo transparente, 512px)
     ├── logo-256.png
@@ -113,8 +120,8 @@ MigraSense/
 | HU-06 Mostrar síntomas y episodios registrados | `historial.html` |
 | HU-07 Panel de información de síntomas prodrómicos | `dashboard.html` (tarjeta de predicción + síntomas recientes) |
 | HU-08 Notificaciones preventivas | Banner "Detectar señales" + tarjeta de riesgo en `dashboard.html` |
-| HU-09 Recordatorios diarios | Toggles en `dashboard.html`, `onboarding.html` (paso 9) y `perfil.html` |
-| HU-10 Generar reporte | Botón de reporte en `historial.html` (genera y descarga `.txt`) |
+| HU-09 Recordatorios diarios | `js/recordatorios.js` (lógica), `perfil.html` (hora/día), `dashboard.html` (toggles + aviso), `sw.js` (notificaciones) |
+| HU-10 Generar reporte | Botón de reporte en `historial.html` → PDF con `js/reporte-pdf.js` |
 | HU-11 Editar perfil | `perfil.html` |
 | HU-12 Cerrar sesión | Botón en `perfil.html` |
 
@@ -125,6 +132,38 @@ MigraSense/
 - Implementar el modelo predictivo real detrás del botón
   "Detectar señales de migraña" (hoy es una simulación basada en la
   cantidad de registros recientes).
-- Añadir notificaciones push/email reales para los recordatorios.
+- Web Push con backend para avisar con la app totalmente cerrada (ver
+  "Recordatorios"). `sw.js` ya trae el manejador `push`.
 - Revisión de accesibilidad (contraste, navegación por teclado) antes
   de la entrega final.
+
+## Reporte en PDF
+
+`historial.html` → botón del calendario (arriba a la derecha) → elegir
+periodo → **Descargar PDF**. Se genera en el navegador (ningún dato sale
+del dispositivo) con `js/reporte-pdf.js`. Contiene: datos del paciente,
+resumen del periodo, gráficos (episodios por semana/mes e intensidad),
+patrones detectados (usa `MSAnalisis`), desencadenantes y síntomas más
+frecuentes, perfil del cuestionario, tabla completa de registros y un
+espacio para observaciones del médico. Las librerías se cargan solo al
+abrir el reporte. En celulares con "Compartir" del sistema aparece
+también el botón **Compartir…**.
+
+## Recordatorios
+
+Configuración en `perfil.html → Recordatorios` (hora del aviso diario, día
+y hora del resumen semanal). Qué hace cada capa:
+
+| Capa | Funciona con la app… | Requiere |
+|---|---|---|
+| Aviso dentro de la app (banner: *Registrar ahora / En 1 hora / ×*) | abierta | nada |
+| Notificación del dispositivo | abierta, en segundo plano o instalada | permiso del navegador; `https` o `localhost` |
+| Calendario `.ics` (**Añadir a mi calendario**) | **cerrada** | importar el archivo una vez |
+| Web Push (pendiente) | cerrada | backend con claves VAPID |
+
+Detalles: el aviso diario no se muestra si ya registraste algo hoy; el
+mensaje cambia según el riesgo estimado; el banner se puede posponer 1 h;
+la notificación del sistema se envía una sola vez al día. En iPhone, las
+notificaciones solo existen si la app se instala en la pantalla de inicio
+(iOS 16.4+). El Service Worker exige `https` o `localhost`
+(`python3 -m http.server 8000` funciona; abrir con `file://` no).
