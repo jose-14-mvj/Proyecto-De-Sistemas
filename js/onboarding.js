@@ -243,7 +243,7 @@
   }
 
   /* ---------- Progreso, botones y puntos ---------- */
-  function refreshChrome(list) {
+  let refreshChrome = function (list) {
     const q = list[idx];
     const total = list.length;
     stepLabel.textContent = `${idx + 1} de ${total}`;
@@ -258,7 +258,7 @@
       if (i === idx) dot.classList.add('on');
       dotsWrap.appendChild(dot);
     });
-  }
+  };
 
   /* ---------- Navegación ---------- */
   nextBtn.addEventListener('click', () => {
@@ -289,5 +289,82 @@
     setTimeout(() => { window.location.href = 'dashboard.html'; }, 700);
   }
 
-  render();
+  /* ===================================================================
+     MODO EDICIÓN  (onboarding.html?edit=1)
+     Muestra TODAS las preguntas con tus respuestas actuales para que
+     cambies solo las que quieras, sin volver a responder el cuestionario.
+     =================================================================== */
+  function iniciarEdicion(saved) {
+    QUESTIONS.forEach(q => { if (saved[q.key] !== undefined) answers[q.key] = saved[q.key]; });
+    document.body.classList.add('edit-mode');
+    document.getElementById('onbHeader').hidden = true;
+    document.getElementById('onbBody').hidden = true;
+    document.getElementById('editMode').hidden = false;
+    const editHost = document.getElementById('editHost');
+    const saveBtn = document.getElementById('editSaveBtn');
+
+    function pintar() {
+      const y = window.scrollY;
+      editHost.innerHTML = '';
+      visible().forEach(q => {
+        const card = document.createElement('section');
+        card.className = 'card edit-q';
+        const h = document.createElement('h4');
+        h.textContent = q.title;
+        card.appendChild(h);
+        if (q.help) { const p = document.createElement('p'); p.className = 'muted small'; p.textContent = q.help; card.appendChild(p); }
+        const grid = document.createElement('div');
+        grid.className = 'chip-grid';
+        q.options.forEach(([value, text]) => {
+          const label = document.createElement('label');
+          label.className = 'chip';
+          label.dataset.value = value;
+          const input = document.createElement('input');
+          input.type = q.type === 'multi' ? 'checkbox' : 'radio';
+          input.name = 'e_' + q.key;
+          const current = answers[q.key];
+          const selected = q.type === 'multi' ? (current || []).includes(value) : current === value;
+          if (selected) { input.checked = true; label.classList.add('selected'); }
+          input.addEventListener('change', () => {
+            const antes = visible().length;
+            onPick(q, value, input, grid);          // reutiliza la misma lógica del cuestionario
+            if (visible().length !== antes) pintar(); // aparece/desaparece una pregunta dependiente
+          });
+          label.appendChild(input);
+          label.appendChild(document.createTextNode(text));
+          grid.appendChild(label);
+        });
+        card.appendChild(grid);
+        editHost.appendChild(card);
+      });
+      window.scrollTo(0, y);
+      refrescarGuardar();
+    }
+    function refrescarGuardar() { saveBtn.disabled = !visible().every(isAnswered); }
+
+    // onPick llama a refreshChrome (solo del modo paso a paso): en edición se sustituye
+    refreshChrome = () => refrescarGuardar();
+
+    saveBtn.addEventListener('click', () => {
+      if (saveBtn.disabled) return;
+      const list = visible();
+      const labels = {};
+      list.forEach(q => {
+        const textOf = v => (q.options.find(o => o[0] === v) || [v, v])[1];
+        const a = answers[q.key];
+        labels[q.key] = Array.isArray(a) ? a.map(textOf) : textOf(a);
+      });
+      const nuevo = { ...saved, labels, version: 2, editedAt: new Date().toISOString() };
+      QUESTIONS.forEach(q => { delete nuevo[q.key]; });
+      list.forEach(q => { nuevo[q.key] = answers[q.key]; });
+      MS.set(MS_KEYS.ONBOARDING, nuevo);
+      msToast('Cuestionario actualizado', '✅');
+      setTimeout(() => { window.location.href = 'perfil.html'; }, 600);
+    });
+    pintar();
+  }
+
+  const saved = MS.get(MS_KEYS.ONBOARDING, null);
+  if (new URLSearchParams(location.search).get('edit') === '1' && MS.hasOnboarding()) iniciarEdicion(saved);
+  else render();
 })();

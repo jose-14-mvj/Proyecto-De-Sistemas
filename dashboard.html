@@ -67,6 +67,9 @@
       <strong id="greetName">—</strong>
     </div>
 
+    <div class="dash-grid">
+    <div class="dash-main">
+
     <div class="predict-card mt-16">
       <div class="predict-badge"><span class="dot"></span> Predicción de hoy</div>
       <div class="predict-row">
@@ -78,6 +81,10 @@
       </div>
       <div class="risk-bar"><div class="risk-bar-fill" id="riskBar" style="width:40%;"></div></div>
       <div class="risk-meta"><span id="riskPct"></span><button type="button" class="link-btn" id="whyBtn">¿Por qué este resultado?</button></div>
+      <div class="episode-alert" id="episodeAlert" hidden>
+        <span class="episode-alert-icon" aria-hidden="true">⚠️</span>
+        <span><strong>Posible episodio de migraña</strong><span id="episodeAlertText"></span></span>
+      </div>
     </div>
 
     <a href="registro.html" class="btn btn-primary">
@@ -126,6 +133,8 @@
       <span class="go"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4"><path d="M9 6l6 6-6 6"/></svg></span>
     </button>
 
+    </div>
+    <div class="dash-side">
     <div class="two-col">
       <div class="mini-card">
         <h4>🩺 Síntomas recientes</h4>
@@ -143,6 +152,8 @@
         </ul>
         <a href="perfil.html#recordatorios" class="rem-link">Configurar horarios</a>
       </div>
+    </div>
+    </div>
     </div>
 
   </div>

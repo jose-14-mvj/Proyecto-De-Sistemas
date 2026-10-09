@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const list = document.getElementById('recordsList');
   const emptyState = document.getElementById('emptyState');
   const statsBox = document.getElementById('statsBox');
+  const chartsBox = document.getElementById('chartsBox');
   const calBox = document.getElementById('calBox');
   const dayPill = document.getElementById('dayPill');
   const detailModal = document.getElementById('detailModal');
@@ -20,6 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let view = 'lista';                   // 'lista' | 'calendario'
   let calMonth = new Date(); calMonth.setDate(1);
   let records = [];
+  let chartMode = 'semana';             // 'semana' | 'mes'
 
   const ICONS = {
     prodromico: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1"/></svg>`,
@@ -32,6 +34,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const dayKey = d => { d = new Date(d); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
   const humanize = s => String(s || '').replace(/_/g, ' ');
   const fmtLong = iso => new Date(iso).toLocaleString('es-BO', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+  function fmtInicio(r) {
+    if (!r.inicio) return '';
+    const d = new Date(r.inicio);
+    if (isNaN(d)) return humanize(r.inicio);
+    return r.type === 'episodio' ? fmtLong(r.inicio) : d.toLocaleString('es-BO', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+  }
 
   function load() {
     records = MS.get(MS_KEYS.RECORDS, []).sort((a, b) => new Date(b.date) - new Date(a.date));
@@ -55,26 +64,46 @@ document.addEventListener('DOMContentLoaded', () => {
     return x;
   }
 
+  function barsChart(buckets, ariaLabel) {
+    const n = buckets.length;
+    const max = Math.max(1, ...buckets.map(b => b.n));
+    const slot = 320 / n, bw = Math.min(34, slot * 0.7), h = 80;
+    const bars = buckets.map((b, i) => {
+      const x = 10 + i * slot + (slot - bw) / 2, bh = Math.round((b.n / max) * h);
+      return `<rect x="${x}" y="${100 - bh}" width="${bw}" height="${Math.max(bh, 2)}" rx="6" fill="${b.n ? 'var(--accent-strong)' : 'var(--border)'}"/>
+        ${b.n ? `<text x="${x + bw / 2}" y="${94 - bh}" text-anchor="middle" font-size="11" font-weight="700" fill="var(--text)">${b.n}</text>` : ''}
+        <text x="${x + bw / 2}" y="118" text-anchor="middle" font-size="9.5" fill="var(--text-muted)">${b.label}</text>`;
+    }).join('');
+    return `<svg viewBox="0 0 340 126" role="img" aria-label="${ariaLabel}">${bars}</svg>`;
+  }
+
   function weeklyChart() {
     const W = 8, start = weekStart(new Date());
     const buckets = Array.from({ length: W }, (_, i) => {
       const d = new Date(start); d.setDate(d.getDate() - 7 * (W - 1 - i));
-      return { d, n: 0 };
+      return { d, n: 0, label: `${d.getDate()}/${d.getMonth() + 1}` };
     });
     records.filter(r => r.type === 'episodio').forEach(r => {
       const ws = weekStart(r.date).getTime();
       const b = buckets.find(x => x.d.getTime() === ws);
       if (b) b.n++;
     });
-    const max = Math.max(1, ...buckets.map(b => b.n));
-    const bw = 28, gap = 12, h = 80;
-    const bars = buckets.map((b, i) => {
-      const x = 10 + i * (bw + gap), bh = Math.round((b.n / max) * h);
-      return `<rect x="${x}" y="${100 - bh}" width="${bw}" height="${Math.max(bh, 2)}" rx="6" fill="${b.n ? 'var(--accent-strong)' : 'var(--border)'}"/>
-        ${b.n ? `<text x="${x + bw / 2}" y="${94 - bh}" text-anchor="middle" font-size="11" font-weight="700" fill="var(--text)">${b.n}</text>` : ''}
-        <text x="${x + bw / 2}" y="118" text-anchor="middle" font-size="9.5" fill="var(--text-muted)">${b.d.getDate()}/${b.d.getMonth() + 1}</text>`;
-    }).join('');
-    return `<svg viewBox="0 0 340 126" role="img" aria-label="Episodios por semana">${bars}</svg>`;
+    return barsChart(buckets, 'Episodios por semana');
+  }
+
+  function monthlyChart() {
+    const M = 6, hoy = new Date();
+    const buckets = Array.from({ length: M }, (_, i) => {
+      const d = new Date(hoy.getFullYear(), hoy.getMonth() - (M - 1 - i), 1);
+      const nombre = d.toLocaleDateString('es-BO', { month: 'short' }).replace('.', '');
+      return { y: d.getFullYear(), m: d.getMonth(), n: 0, label: nombre.charAt(0).toUpperCase() + nombre.slice(1) };
+    });
+    records.filter(r => r.type === 'episodio').forEach(r => {
+      const d = new Date(r.date);
+      const b = buckets.find(x => x.y === d.getFullYear() && x.m === d.getMonth());
+      if (b) b.n++;
+    });
+    return barsChart(buckets, 'Episodios por mes');
   }
 
   function intensityChart() {
@@ -91,7 +120,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function renderStats() {
-    if (!records.length) { statsBox.innerHTML = ''; return; }
+    if (!records.length) { statsBox.innerHTML = ''; chartsBox.innerHTML = ''; return; }
     const since = Date.now() - 30 * 86400000;
     const rec30 = records.filter(r => new Date(r.date).getTime() >= since);
     const eps30 = rec30.filter(r => r.type === 'episodio').length;
@@ -102,10 +131,33 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="stat"><strong>${eps30}</strong><span>Episodios (30 días)</span></div>
         <div class="stat"><strong>${avg}</strong><span>Intensidad media</span></div>
         <div class="stat"><strong>${records.length}</strong><span>Registros totales</span></div>
-      </div>
-      <div class="card chart-card"><h4>Episodios por semana</h4>${weeklyChart()}</div>
-      <div class="card chart-card"><h4>Intensidad en el tiempo</h4>${intensityChart()}</div>`;
+      </div>`;
+    renderCharts();
   }
+
+  function renderCharts() {
+    if (!records.length) { chartsBox.innerHTML = ''; return; }
+    const porMes = chartMode === 'mes';
+    chartsBox.innerHTML = `
+      <div class="card chart-card">
+        <div class="chart-head">
+          <h4>Episodios por ${porMes ? 'mes' : 'semana'}</h4>
+          <div class="seg" role="group" aria-label="Agrupar episodios">
+            <button type="button" class="seg-btn ${porMes ? '' : 'active'}" data-chart="semana" aria-pressed="${!porMes}">Semana</button>
+            <button type="button" class="seg-btn ${porMes ? 'active' : ''}" data-chart="mes" aria-pressed="${porMes}">Mes</button>
+          </div>
+        </div>
+        ${porMes ? monthlyChart() : weeklyChart()}
+      </div>
+      <div class="card chart-card"><div class="chart-head"><h4>Intensidad en el tiempo</h4></div>${intensityChart()}</div>`;
+  }
+
+  chartsBox.addEventListener('click', e => {
+    const b = e.target.closest('[data-chart]');
+    if (!b || b.dataset.chart === chartMode) return;
+    chartMode = b.dataset.chart;
+    renderCharts();
+  });
 
   /* ---------- Calendario ---------- */
   function renderCalendar() {
@@ -227,7 +279,7 @@ document.addEventListener('DOMContentLoaded', () => {
           ${row('Síntomas', esc((r.sintomas || []).join(', ')))}
           ${row('Posibles desencadenantes', esc((r.disparadores || []).join(', ')))}
           ${row('Duración', esc(humanize(r.duracion)))}
-          ${row('Inicio', esc(humanize(r.inicio)))}
+          ${row(ep ? 'Inicio' : 'Hora de aparición', esc(fmtInicio(r)))}
           ${ep ? row('Medicación', r.medicacion ? esc(r.medicamento || 'Sí') : 'No tomó') : ''}
           ${row('Notas', esc(r.notas))}
         </div>
@@ -361,7 +413,7 @@ document.addEventListener('DOMContentLoaded', () => {
     finally { btn.textContent = original; btn.disabled = false; pintarResumenReporte(); }
   }
 
-  document.getElementById('reportBtn').addEventListener('click', () => {
+  function abrirReporte() {
     pintarResumenReporte();
     reportModal.classList.add('show');
     cargarLibsPdf().catch(() => {});                       // precarga mientras la persona elige el periodo
@@ -369,7 +421,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const prueba = new File([''], 'a.pdf', { type: 'application/pdf' });
       if (navigator.canShare && navigator.canShare({ files: [prueba] })) shareBtn.style.display = '';
     } catch (e) { /* sin compartir */ }
-  });
+  }
+  document.getElementById('reportBtn').addEventListener('click', abrirReporte);
+  if (new URLSearchParams(location.search).get('reporte') === '1') abrirReporte();
   reportModal.addEventListener('click', (e) => { if (e.target.id === 'reportModal') e.target.classList.remove('show'); });
 
   document.getElementById('reportPeriod').addEventListener('click', (e) => {

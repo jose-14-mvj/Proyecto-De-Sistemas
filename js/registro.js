@@ -60,20 +60,48 @@ document.addEventListener('DOMContentLoaded', () => {
     return Array.from(container.querySelectorAll('.chip.selected, .option-card.selected')).map(el => el.textContent.trim());
   }
 
-  /* ---------- Construir checklist de síntomas prodrómicos (pestaña 1) ---------- */
+  /* ---------- Síntomas prodrómicos (pestaña 1): SOLO UNO, con "Más información" ---------- */
   const prodromicoChecklist = document.getElementById('prodromicoChecklist');
-  MS_PRODROMICOS.forEach(p => {
-    const label = document.createElement('label');
-    label.className = 'option-card multi';
-    label.dataset.value = p.id;
-    label.innerHTML = `
-      <input type="checkbox">
-      <span class="oc-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/></svg></span>
-      <span class="oc-text">${p.label}</span>
-      <span class="oc-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg></span>`;
-    prodromicoChecklist.appendChild(label);
+  MS_PRODROMICOS.forEach((p, i) => {
+    const item = document.createElement('div');
+    item.className = 'sym-item';
+    item.innerHTML = `
+      <label class="option-card" data-value="${p.id}">
+        <input type="radio" name="prodsintoma">
+        <span class="oc-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/></svg></span>
+        <span class="oc-text">${p.label}</span>
+        <span class="oc-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg></span>
+      </label>
+      <button type="button" class="sym-more" aria-expanded="false" aria-controls="symInfo${i}">
+        Más información
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
+      <div class="sym-info" id="symInfo${i}" hidden>${p.info}</div>`;
+    prodromicoChecklist.appendChild(item);
   });
-  bindMulti(prodromicoChecklist);
+  bindSingle(prodromicoChecklist);
+  prodromicoChecklist.addEventListener('click', (e) => {
+    const btn = e.target.closest('.sym-more');
+    if (!btn) return;
+    const panel = document.getElementById(btn.getAttribute('aria-controls'));
+    const open = panel.hidden;
+    panel.hidden = !open;
+    btn.setAttribute('aria-expanded', String(open));
+    btn.closest('.sym-item').classList.toggle('open', open);
+  });
+
+  /* ---------- Hora de aparición: "Ahora mismo" u otra hora ---------- */
+  const prodHoraModo = document.getElementById('prodHoraModo');
+  const prodHoraWrap = document.getElementById('prodHoraWrap');
+  const prodHora = document.getElementById('prodHora');
+  const hhmm = d => `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  prodHora.value = hhmm(new Date());
+  bindSingle(prodHoraModo);
+  prodHoraModo.addEventListener('change', () => {
+    const modo = getSingleValue(prodHoraModo);
+    prodHoraWrap.style.display = modo === 'otra' ? '' : 'none';
+    if (modo === 'otra') { prodHora.value = hhmm(new Date()); prodHora.focus(); }
+  });
 
   /* ---------- Construir grid de síntomas (pestaña 2, versión compacta) ---------- */
   const epSintomas = document.getElementById('epSintomas');
@@ -81,7 +109,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const label = document.createElement('label');
     label.className = 'chip';
     label.dataset.value = p.id;
-    label.style.flex = '1 1 45%';
     label.innerHTML = `<input type="checkbox">${p.label}`;
     epSintomas.appendChild(label);
   });
@@ -123,22 +150,35 @@ document.addEventListener('DOMContentLoaded', () => {
   bindScale('prodIntensidad', 'prodValue', 'prodCaption');
   bindScale('epIntensidad', 'epValue', 'epCaption');
 
-  /* ---------- Guardar: síntomas prodrómicos ---------- */
+  /* ---------- Guardar: síntoma prodrómico (uno solo, con hora de aparición) ---------- */
   document.getElementById('saveProdromico').addEventListener('click', () => {
-    const seleccionados = getMultiLabels(prodromicoChecklist);
-    if (seleccionados.length === 0) {
-      msToast('Selecciona al menos un síntoma', '⚠️');
+    const sel = prodromicoChecklist.querySelector('.option-card.selected');
+    if (!sel) {
+      msToast('Selecciona el síntoma que notas', '⚠️');
       return;
     }
+    const sintoma = sel.querySelector('.oc-text').textContent.trim();
+
+    const ahora = new Date();
+    let aparicion = ahora;
+    if (getSingleValue(prodHoraModo) === 'otra') {
+      if (!/^\d{2}:\d{2}$/.test(prodHora.value)) { msToast('Indica la hora de aparición', '⚠️'); return; }
+      const [h, m] = prodHora.value.split(':').map(Number);
+      aparicion = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate(), h, m, 0, 0);
+      if (aparicion > ahora) aparicion.setDate(aparicion.getDate() - 1);   // hora futura = fue ayer
+    }
+
     const records = MS.get(MS_KEYS.RECORDS, []);
     records.push({
       id: Date.now(),
       type: 'prodromico',
       label: 'Síntomas prodrómicos',
-      sintomas: seleccionados,
+      sintomas: [sintoma],
       intensidad: Number(document.getElementById('prodIntensidad').value),
       notas: document.getElementById('prodNotas').value.trim(),
-      date: new Date().toISOString()
+      inicio: aparicion.toISOString(),            // hora de aparición del síntoma
+      date: aparicion.toISOString(),
+      registradoEn: ahora.toISOString()
     });
     MS.set(MS_KEYS.RECORDS, records);
     msToast('Registro guardado con éxito', '📝');

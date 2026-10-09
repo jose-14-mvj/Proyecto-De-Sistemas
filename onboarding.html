@@ -19,11 +19,11 @@
 </script>
 </head>
 <body>
-<div class="app-shell no-nav wide-form">
+<div class="app-shell no-nav wide-form onb-page">
   <div class="screen">
 
     <!-- Las preguntas son obligatorias: no hay opción "Más tarde" -->
-    <div class="onb-header">
+    <div class="onb-header" id="onbHeader">
       <button class="back-btn" id="backBtn" aria-label="Atrás">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M15 19l-7-7 7-7"/></svg>
       </button>
@@ -31,7 +31,25 @@
       <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
     </div>
 
-    <div class="onb-body">
+    <!-- MODO EDICIÓN (perfil → Editar cuestionario): todas las respuestas en una sola pantalla -->
+    <div id="editMode" hidden>
+      <div class="edit-head">
+        <a href="perfil.html" class="back-btn" aria-label="Volver al perfil">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M15 19l-7-7 7-7"/></svg>
+        </a>
+        <div>
+          <h2 style="font-size:1.3rem;">Editar cuestionario</h2>
+          <p class="muted small">Cambia solo las respuestas que quieras. No tienes que responder todo de nuevo.</p>
+        </div>
+      </div>
+      <div id="editHost" class="edit-grid"></div>
+      <div class="edit-actions">
+        <a href="perfil.html" class="btn btn-outline">Cancelar</a>
+        <button type="button" class="btn btn-primary" id="editSaveBtn">Guardar cambios</button>
+      </div>
+    </div>
+
+    <div class="onb-body" id="onbBody">
       <div class="onb-illustration" id="onbIllustration"></div>
 
       <div class="onb-content">

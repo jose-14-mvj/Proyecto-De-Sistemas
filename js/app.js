@@ -107,18 +107,38 @@ const MS_TRIGGERS = [
 ];
 
 const MS_PRODROMICOS = [
-  { id: 'luz', label: 'Sensibilidad a la luz' },
-  { id: 'sonido', label: 'Sensibilidad al sonido' },
-  { id: 'fatiga', label: 'Fatiga o bostezos frecuentes' },
-  { id: 'cuello', label: 'Dolor o rigidez de cuello' },
-  { id: 'antojos', label: 'Antojos de comida' },
-  { id: 'humor', label: 'Cambios de humor / irritabilidad' },
-  { id: 'concentracion', label: 'Dificultad para concentrarse' },
-  { id: 'nauseas', label: 'Náuseas' },
-  { id: 'vision', label: 'Destellos o visión borrosa (aura)' },
-  { id: 'sed', label: 'Sed excesiva' },
-  { id: 'retencion', label: 'Retención de líquidos' },
-  { id: 'bostezos', label: 'Bostezos excesivos' }
+  { id: 'hiperactividad', label: 'Hiperactividad',
+    info: 'Energía inusualmente alta o inquietud: sientes necesidad de moverte o hacer muchas cosas, más de lo normal en ti.' },
+  { id: 'hipoactividad', label: 'Hipoactividad',
+    info: 'Lentitud o ganas de no moverte: te cuesta arrancar y prefieres quedarte quieto/a más de lo habitual.' },
+  { id: 'depresion', label: 'Depresión',
+    info: 'Tristeza, desánimo o pérdida de interés que aparece sin una causa clara, horas o días antes del dolor.' },
+  { id: 'avidez_alimentos', label: 'Avidez por determinados alimentos',
+    info: 'Antojo intenso por comidas concretas (dulces, chocolate, salados). A veces es parte del aviso del cuerpo y no la causa de la migraña.' },
+  { id: 'bostezos_repetidos', label: 'Bostezos repetidos',
+    info: 'Bostezar muchas veces seguidas sin tener sueño ni aburrimiento.' },
+  { id: 'astenia', label: 'Astenia',
+    info: 'Debilidad o falta de fuerzas general: el cuerpo se siente pesado aunque no hayas hecho esfuerzo.' },
+  { id: 'cervical', label: 'Dolor o rigidez cervical',
+    info: 'Tensión, molestia o dificultad para mover el cuello y la nuca.' },
+  { id: 'cansancio', label: 'Cansancio',
+    info: 'Fatiga o sueño mayor al habitual, incluso después de haber descansado.' },
+  { id: 'animo_exaltado', label: 'Ánimo exaltado',
+    info: 'Euforia, irritabilidad o humor inusualmente elevado, con cambios bruscos de ánimo.' },
+  { id: 'hambre_atipica', label: 'Hambre atípica',
+    info: 'Hambre fuera de horario o mucho mayor (o menor) a la que sueles tener.' },
+  { id: 'concentracion', label: 'Dificultad para concentrarse',
+    info: 'Te cuesta mantener la atención, leer o seguir una conversación; sensación de "mente nublada".' },
+  { id: 'luz', label: 'Sensibilidad a la luz',
+    info: 'La luz normal (pantallas, focos, sol) te molesta o te incomoda más de lo habitual.' },
+  { id: 'ruido', label: 'Sensibilidad al ruido',
+    info: 'Los sonidos cotidianos te resultan demasiado fuertes o irritantes.' },
+  { id: 'nauseas', label: 'Náuseas',
+    info: 'Malestar en el estómago o ganas de vomitar, con o sin vómito.' },
+  { id: 'vision', label: 'Visión borrosa',
+    info: 'Ves las cosas poco nítidas, con destellos o manchas (puede ser un aviso de aura).' },
+  { id: 'bostezos_palidez', label: 'Bostezos o palidez',
+    info: 'Bostezos acompañados de una piel más pálida de lo normal en el rostro.' }
 ];
 
 function msFormatDate(iso) {
@@ -165,3 +185,28 @@ function msInitThemeToggle() {
 
 document.addEventListener('DOMContentLoaded', msSetActiveNav);
 document.addEventListener('DOMContentLoaded', msInitThemeToggle);
+
+/* ---------- Flecha "hay más contenido abajo" (solo celular) ----------
+   Aparece mientras queda contenido por ver y desaparece al llegar al final.
+   Al tocarla baja suavemente una pantalla. */
+document.addEventListener('DOMContentLoaded', () => {
+  const hayNav = !!document.querySelector('.bottom-nav');
+  if (!hayNav && !document.querySelector('.form-page')) return;
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'scroll-hint' + (hayNav ? '' : ' no-nav-hint');
+  btn.setAttribute('aria-label', 'Ver más contenido hacia abajo');
+  btn.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>';
+  document.body.appendChild(btn);
+
+  const actualizar = () => {
+    const resto = document.documentElement.scrollHeight - (window.scrollY + window.innerHeight);
+    btn.classList.toggle('show', resto > 60);
+  };
+  btn.addEventListener('click', () => window.scrollBy({ top: window.innerHeight * 0.7, behavior: 'smooth' }));
+  window.addEventListener('scroll', actualizar, { passive: true });
+  window.addEventListener('resize', actualizar);
+  // el contenido se dibuja con JS después de cargar: se revisa varias veces
+  new MutationObserver(actualizar).observe(document.body, { childList: true, subtree: true });
+  actualizar(); setTimeout(actualizar, 400);
+});

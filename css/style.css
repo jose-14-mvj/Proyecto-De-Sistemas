@@ -1249,3 +1249,252 @@ html[data-theme="dark"] .tip-green{ background:linear-gradient(135deg,rgba(79,18
 #reportPeriod{ margin-bottom:0; }
 .report-extra{ display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; justify-content:center; }
 
+
+
+/* =====================================================================
+   CORRECCIONES (revisión de la entrega)
+   ===================================================================== */
+
+/* ---------- 1. Bug de "pantalla cortada" ----------
+   Causa: html y body tenían height:100%, así que el degradado de fondo medía
+   solo lo que cabe en pantalla y se REPETÍA al hacer scroll, dejando una
+   línea/corte visible en casi todas las pantallas (también en la barra
+   lateral). Ahora el fondo queda fijo y cubre siempre toda la ventana. */
+html{ height:auto; min-height:100%; }
+body{
+  height:auto; min-height:100vh;
+  background-attachment:fixed; background-repeat:no-repeat; background-size:cover;
+}
+html[data-theme="dark"] body{
+  background-attachment:fixed; background-repeat:no-repeat; background-size:cover;
+}
+[hidden]{ display:none !important; }
+
+/* Los <input> de chips y tarjetas ya no usan display:none (así se pueden usar con el teclado) */
+.chip, .option-card{ position:relative; }
+.chip input, .option-card input{
+  display:block; position:absolute; opacity:0; width:1px; height:1px; margin:0; pointer-events:none;
+}
+
+/* ---------- 2. Registro: síntoma único, "Más información" y hora ---------- */
+.form-cols{ display:grid; grid-template-columns:1fr; gap:0; }
+.sym-list{ display:grid; grid-template-columns:1fr; gap:10px; align-items:start; }
+.sym-item{
+  display:flex; flex-direction:column;
+  background:var(--card); border:1.6px solid var(--border); border-radius:var(--radius-md);
+  transition:border-color .15s ease, background .15s ease;
+}
+.sym-item .option-card{ border:none; background:transparent; padding:12px 14px; }
+.sym-item .option-card:hover{ transform:none; box-shadow:none; }
+.sym-item:has(.option-card.selected){ border-color:var(--accent-strong); background:var(--accent-soft); }
+.sym-more{
+  align-self:flex-start; margin:-2px 14px 10px 68px; padding:2px 0;
+  background:none; border:0; color:var(--accent-strong);
+  font:700 .74rem var(--font-body); display:inline-flex; align-items:center; gap:5px;
+}
+.sym-more:hover{ text-decoration:underline; }
+.sym-more svg{ transition:transform .2s ease; }
+.sym-item.open .sym-more svg{ transform:rotate(180deg); }
+.sym-info{ margin:0 14px 12px 68px; font-size:.8rem; line-height:1.5; color:var(--text-muted); }
+
+/* ---------- 3. Aviso de posible episodio de migraña ---------- */
+.rem-banner.rem-alerta{ background:var(--danger-soft); border-color:var(--danger); }
+.rem-banner.rem-alerta .rem-banner-icon{ font-size:1.7rem; }
+.rem-banner.rem-alerta .rem-banner-body strong{ font-size:.98rem; }
+.rem-banner.rem-alerta .rem-banner-body span{ color:var(--text); font-size:.86rem; }
+.episode-alert{
+  display:flex; gap:12px; align-items:flex-start; margin-top:14px; padding:12px 14px;
+  border-radius:var(--radius-md); background:var(--danger-soft); border:1.5px solid var(--danger);
+}
+.episode-alert-icon{ font-size:1.3rem; line-height:1.2; }
+.episode-alert strong{ display:block; font-family:var(--font-head); font-size:.9rem; }
+.episode-alert span span{ font-size:.84rem; color:var(--text); line-height:1.4; }
+.alert-row{ background:var(--danger-soft); border-radius:var(--radius-md); padding:14px 12px; margin-bottom:6px; border-bottom:none; }
+.alert-row .settings-label svg{ color:var(--danger); }
+
+/* ---------- 4. Perfil: reporte grande y cuadrícula ---------- */
+.profile-grid{ display:grid; grid-template-columns:1fr; }
+.profile-col + .profile-col{ margin-top:16px; }
+.report-cta{
+  display:flex; align-items:center; gap:16px; padding:20px 22px;
+  border-radius:var(--radius-lg); color:#fff;
+  background:linear-gradient(135deg,#2563eb,#1e3a8a);
+  box-shadow:var(--shadow-md); transition:transform .2s ease, box-shadow .2s ease;
+}
+.report-cta:hover{ transform:translateY(-3px); box-shadow:0 16px 34px rgba(29,78,216,.34); }
+.report-cta-icon{ width:58px; height:58px; border-radius:16px; background:rgba(255,255,255,.18); display:flex; align-items:center; justify-content:center; flex:none; }
+.report-cta-text{ flex:1; display:flex; flex-direction:column; gap:3px; min-width:0; }
+.report-cta-text strong{ font:700 1.08rem var(--font-head); }
+.report-cta-text span{ font-size:.84rem; opacity:.9; }
+
+/* ---------- 5. Historial ---------- */
+.hist-top{ gap:16px; flex-wrap:wrap; }
+.report-btn{ width:auto; padding:14px 26px; font-size:1rem; }
+.report-btn svg{ flex:none; }
+.filters-bar{ display:flex; flex-wrap:wrap; column-gap:28px; }
+.records-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(340px,1fr)); gap:14px; }
+.records-grid .record-item{ margin-bottom:0; }
+.charts-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(340px,1fr)); gap:14px; margin-top:22px; }
+.charts-grid .chart-card{ margin-bottom:0; }
+.chart-card svg{ max-height:280px; }
+.chart-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:8px; }
+.chart-head h4{ margin:0; }
+.seg{ display:inline-flex; background:var(--card-alt); border-radius:var(--radius-pill); padding:3px; }
+.seg-btn{ border:0; background:transparent; padding:6px 15px; border-radius:var(--radius-pill); font:700 .76rem var(--font-body); color:var(--text-muted); }
+.seg-btn.active{ background:var(--primary); color:#fff; }
+html[data-theme="dark"] .seg-btn.active{ color:#0b1424; }
+
+/* ---------- 6. Cuestionario: preguntas centradas + modo edición ---------- */
+.onb-page .screen{ min-height:100vh; display:flex; flex-direction:column; }
+.onb-page .onb-body{ flex:1; display:flex; flex-direction:column; justify-content:center; align-items:center; margin-top:0; }
+.onb-page .onb-content{ width:100%; max-width:640px; text-align:center; }
+.onb-page .onb-illustration{ position:static; margin:0 0 18px; background:transparent; padding:0; }
+.onb-page .chip-grid{ justify-content:center; }
+.onb-page .onb-footer{ max-width:480px; margin-left:auto; margin-right:auto; }
+.edit-head{ display:flex; align-items:center; gap:14px; margin-bottom:22px; }
+.edit-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); gap:14px; align-items:start; }
+.edit-q h4{ font-size:.92rem; margin-bottom:6px; }
+.edit-q .chip-grid{ margin-top:12px; }
+.edit-actions{ display:flex; gap:12px; justify-content:flex-end; margin-top:24px; }
+.edit-actions .btn{ width:auto; min-width:180px; }
+body.edit-mode .onb-page .screen{ min-height:0; display:block; }
+
+/* ---------- 7. Consejos ---------- */
+.tips-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(340px,1fr)); gap:14px; align-items:start; }
+.tips-grid > .card{ margin-top:0; }
+
+/* =====================================================================
+   REDISEÑO A ANCHO COMPLETO (escritorio ≥ 900px)
+   Antes todo el contenido quedaba en una columna de ~900px en medio de la
+   pantalla. Ahora cada pantalla usa todo el ancho disponible con
+   cuadrículas de varias columnas.
+   ===================================================================== */
+@media (min-width:560px){
+  /* Cuestionario a pantalla completa */
+  .app-shell.onb-page{ margin:0 auto; min-height:100vh; border-radius:0; box-shadow:none; }
+}
+
+@media (min-width:900px){
+  /* Pantallas con barra lateral: sin tope de ancho */
+  .app-shell:not(.no-nav) .screen{
+    max-width:none; margin:0;
+    padding:36px clamp(24px,3.2vw,64px) 64px;
+  }
+  .app-shell:not(.no-nav) .screen > h2:first-child{ font-size:1.6rem !important; }
+
+  /* Inicio */
+  .dash-grid{ display:grid; grid-template-columns:minmax(0,1.75fr) minmax(300px,1fr); gap:30px; align-items:start; }
+  .dash-side .two-col{ grid-template-columns:1fr; margin-top:16px; }
+  .dash-side .mini-card{ padding:20px; }
+  .dash-side .mini-card h4{ font-size:.92rem; }
+  .dash-side .mini-list li{ font-size:.84rem; padding:9px 0; }
+  .quick-grid{ grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); }
+  .predict-card{ padding:30px 34px; }
+  .predict-title{ font-size:1.6rem; max-width:none; }
+  .predict-desc{ font-size:.95rem; max-width:none; }
+  img.predict-icon{ width:120px; height:120px; }
+  .greeting strong{ font-size:1.5rem; }
+
+  /* Historial */
+  .stats-grid{ gap:16px; }
+  .stat{ padding:20px 12px; }
+  .stat strong{ font-size:1.9rem; }
+  .stat span{ font-size:.8rem; }
+  .records-grid{ grid-template-columns:repeat(auto-fill,minmax(400px,1fr)); }
+  .charts-grid{ grid-template-columns:repeat(2,minmax(0,1fr)); }
+
+  /* Perfil */
+  .profile-grid{ grid-template-columns:minmax(0,1fr) minmax(0,1.2fr); gap:30px; align-items:start; }
+  .profile-col + .profile-col{ margin-top:0; }
+
+  /* Consejos */
+  .tips-hero{ padding:26px 32px; }
+  .tips-hero svg, .tips-hero img{ width:84px; height:84px; }
+  #guias{ display:grid; grid-template-columns:repeat(auto-fit,minmax(480px,1fr)); align-items:start; }
+  .tips-grid{ grid-template-columns:repeat(auto-fit,minmax(380px,1fr)); }
+
+  /* Registro: dos columnas */
+  .app-shell.no-nav.wide-form.form-page{ max-width:1280px; width:calc(100% - 64px); margin:32px auto; }
+  .form-page .screen{ padding:40px 48px 48px; }
+  .form-cols{ grid-template-columns:minmax(0,1.2fr) minmax(0,1fr); gap:44px; align-items:start; }
+  #panel-episodio .form-cols{ grid-template-columns:minmax(0,1fr) minmax(0,1fr); }
+  .sym-list{ grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .form-page .tabs{ max-width:560px; }
+
+  /* Cuestionario: ilustración + pregunta, centrados en la pantalla */
+  .app-shell.no-nav.wide-form.onb-page{ max-width:1180px; width:100%; margin:0 auto; }
+  .onb-page .screen{ padding:36px 56px; }
+  .onb-page .onb-body{ flex-direction:row; justify-content:center; align-items:center; gap:64px; }
+  .onb-page .onb-illustration{ flex:0 0 300px; margin:0; }
+  .onb-page .onb-illustration svg{ width:240px; height:240px; }
+  .onb-page .onb-content{ flex:0 1 620px; }
+  .onb-page .onb-question{ font-size:1.7rem; }
+  .onb-page .onb-help{ font-size:.95rem; }
+  .onb-page .chip{ padding:13px 22px; font-size:.92rem; }
+  body.edit-mode .app-shell.no-nav.wide-form.onb-page{ max-width:1180px; }
+  body.edit-mode .onb-page .onb-content{ max-width:none; }
+
+  /* Inicio de sesión / registro de cuenta: pantalla dividida a ancho completo */
+  .app-shell.no-nav.auth-split{ max-width:none; width:100%; margin:0; min-height:100vh; border-radius:0; box-shadow:none; }
+  .app-shell.no-nav.auth-split .auth-visual{ flex:0 0 50%; padding:56px clamp(40px,6vw,110px); }
+  .app-shell.no-nav.auth-split .auth-illustration img{ width:170px; height:170px; }
+  .app-shell.no-nav.auth-split .auth-visual h2{ font-size:2rem; }
+  .app-shell.no-nav.auth-split .auth-visual p{ font-size:1.02rem; }
+  .app-shell.no-nav.auth-split .screen{ padding:56px clamp(40px,6vw,110px); }
+  .app-shell.no-nav.auth-split .screen > *{ width:100%; max-width:500px; margin-left:auto; margin-right:auto; }
+
+  /* Ventanas emergentes: cuadro centrado y más ancho (antes, una hoja angosta abajo) */
+  .modal-overlay{ align-items:center; }
+  .modal-sheet{ max-width:600px; border-radius:26px; max-height:88vh; }
+}
+
+@media (min-width:1500px){
+  .dash-grid{ grid-template-columns:minmax(0,2fr) minmax(340px,1fr); }
+  .records-grid{ grid-template-columns:repeat(auto-fill,minmax(440px,1fr)); }
+}
+
+/* ---------- Ajustes finos ---------- */
+html{ background-color:var(--bg-grad-2); }
+.rem-banner{ margin-bottom:14px; }
+body.edit-mode .onb-page .chip-grid{ justify-content:flex-start; }
+body.edit-mode .onb-page .edit-q{ text-align:left; }
+@media (min-width:900px){
+  .quick-grid{ grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
+@media (min-width:1500px){
+  .quick-grid{ grid-template-columns:repeat(4,minmax(0,1fr)); }
+}
+.app-shell.onb-page{ background:transparent; }
+
+/* Barra lateral fija al hacer scroll: .app-shell tenía overflow:hidden, lo que
+   impedía que position:sticky funcionara y la barra se "cortaba" al bajar. */
+@media (min-width:900px){
+  .app-shell:not(.no-nav){ overflow:visible; }
+  .side-nav{ overflow-y:auto; }
+}
+
+/* =====================================================================
+   CELULAR: barra de navegación siempre visible + flecha "hay más abajo"
+   ===================================================================== */
+@media (max-width:899px){
+  .bottom-nav{
+    position:fixed; left:50%; right:auto; bottom:0; transform:translateX(-50%);
+    width:100%; max-width:460px; z-index:60;
+  }
+  .app-shell{ padding-bottom:104px; }
+  .app-shell.no-nav{ padding-bottom:36px; }
+}
+.scroll-hint{
+  position:fixed; left:50%; bottom:92px; transform:translateX(-50%);
+  width:46px; height:46px; border-radius:50%; border:none; z-index:55;
+  display:flex; align-items:center; justify-content:center;
+  background:var(--primary); color:#fff; box-shadow:var(--shadow-md);
+  opacity:0; pointer-events:none; transition:opacity .25s ease;
+}
+html[data-theme="dark"] .scroll-hint{ color:#0b1424; }
+.scroll-hint.show{ opacity:.95; pointer-events:auto; }
+.scroll-hint.no-nav-hint{ bottom:24px; }
+.scroll-hint svg{ animation:msHintBounce 1.4s ease-in-out infinite; }
+@keyframes msHintBounce{ 0%,100%{ transform:translateY(-2px); } 50%{ transform:translateY(4px); } }
+@media (prefers-reduced-motion:reduce){ .scroll-hint svg{ animation:none; } }
+@media (min-width:900px){ .scroll-hint{ display:none; } }

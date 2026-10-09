@@ -54,32 +54,35 @@
   </nav>
   <div class="screen">
 
-    <div class="topbar">
+    <div class="topbar hist-top">
       <div>
         <h2 style="font-size:1.3rem;">Tu historial</h2>
         <p class="muted small">Todos tus registros en un solo lugar</p>
       </div>
-      <button class="back-btn" id="reportBtn" title="Generar reporte">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3v4M16 3v4M4 9h16M5 5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z"/><path d="M9 14l2 2 4-4"/></svg>
+      <button class="btn btn-primary report-btn" id="reportBtn" type="button">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5Z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg>
+        Generar reporte
       </button>
     </div>
 
     <div id="statsBox"></div>
 
-    <div class="filter-row">
-      <button class="filter-chip active" data-filter="todos">Todos</button>
-      <button class="filter-chip" data-filter="prodromico">Prodrómicos</button>
-      <button class="filter-chip" data-filter="episodio">Episodios</button>
-    </div>
+    <div class="filters-bar">
+      <div class="filter-row">
+        <button class="filter-chip active" data-filter="todos">Todos</button>
+        <button class="filter-chip" data-filter="prodromico">Prodrómicos</button>
+        <button class="filter-chip" data-filter="episodio">Episodios</button>
+      </div>
 
-    <div class="filter-row">
-      <button class="filter-chip active" data-view="lista">Lista</button>
-      <button class="filter-chip" data-view="calendario">Calendario</button>
+      <div class="filter-row">
+        <button class="filter-chip active" data-view="lista">Lista</button>
+        <button class="filter-chip" data-view="calendario">Calendario</button>
+      </div>
     </div>
     <div id="calBox" style="display:none; margin-bottom:16px;"></div>
     <div class="day-pill" id="dayPill" style="display:none;"><span></span><button type="button" aria-label="Quitar filtro de día">×</button></div>
 
-    <div id="recordsList" class="stagger-in"></div>
+    <div id="recordsList" class="stagger-in records-grid"></div>
 
     <div class="empty-state" id="emptyState" style="display:none;">
       <svg class="empty-illustration" viewBox="0 0 160 160" fill="none">
@@ -95,6 +98,9 @@
       <p class="small mt-8">Registra tus síntomas para empezar a ver patrones aquí.</p>
       <a href="registro.html" class="btn btn-primary mt-16" style="max-width:220px; margin:16px auto 0;">Registrar ahora</a>
     </div>
+
+    <!-- Gráficos: debajo de los síntomas y episodios registrados -->
+    <div id="chartsBox" class="charts-grid"></div>
 
   </div>
 

@@ -24,6 +24,13 @@ document.addEventListener('DOMContentLoaded', () => {
   bar.dataset.level = risk.nivel;
   document.getElementById('riskPct').textContent = risk.score + '%';
 
+  /* ---------- Posible episodio de migraña (probabilidad muy alta) ---------- */
+  const alerta = MSAnalisis.alertaEpisodio(records, onboarding);
+  if (alerta.activa) {
+    document.getElementById('episodeAlertText').textContent = alerta.texto;
+    document.getElementById('episodeAlert').hidden = false;
+  }
+
   /* ---------- Síntomas recientes ---------- */
   const list = document.getElementById('recentSymptoms');
   const dotColor = { alto: 'var(--danger)', medio: 'var(--orange)', bajo: 'var(--success)' };
@@ -31,7 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (records.length === 0) {
     list.innerHTML = `<li style="border:none; color:var(--text-faint);">Aún no tienes registros</li>`;
   } else {
-    records.slice(-4).reverse().forEach(r => {
+    [...records].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 4).forEach(r => {
       const li = document.createElement('li');
       const color = r.intensidad >= 7 ? dotColor.alto : r.intensidad >= 4 ? dotColor.medio : dotColor.bajo;
       li.innerHTML = `<span><span class="mini-dot" style="background:${color}"></span>${r.label}</span><span>${msFormatDate(r.date)}</span>`;

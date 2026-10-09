@@ -86,15 +86,22 @@ document.addEventListener('DOMContentLoaded', () => {
     ['Ocupación', 'ocupacion'],
     ['Tiempo con migrañas', 'tiempoMigrana'],
     ['Frecuencia', 'frecuencia'],
+    ['¿Tienen orden de aparición?', 'tieneOrden'],
+    ['Orden de aparición', 'ordenAparicion', true],
+    ['Momento del día en que comienza', 'momentoDia'],
     ['Duración habitual', 'duracion'],
     ['Intensidad del dolor', 'intensidad'],
-    ['Nivel de estrés', 'estres'],
+    ['Conoce la fase prodrómica', 'conocesProdromica'],
     ['Horas de sueño', 'sueno'],
+    ['Nivel de estrés', 'estres'],
+    ['Consume cafeína', 'cafeina'],
+    ['Porciones de cafeína al día', 'porcionesCafeina', true],
     ['Condiciones', 'condiciones']
   ];
   const infoBox = document.getElementById('migraineInfo');
-  INFO_ROWS.forEach(([title, key]) => {
+  INFO_ROWS.forEach(([title, key, condicional]) => {
     const value = labels[key];
+    if (condicional && value === undefined) return;   // pregunta que no aplicó según tus respuestas
     const text = Array.isArray(value) ? value.join(', ') : value;
     const row = document.createElement('div');
     row.className = 'settings-row';
@@ -132,7 +139,7 @@ document.addEventListener('DOMContentLoaded', () => {
     granted: ['ok', 'Avisos del dispositivo activados. Te notificaremos a la hora elegida mientras MigraSense esté abierta o instalada.'],
     denied: ['bad', 'Los avisos están bloqueados en este navegador. Habilítalos desde el candado junto a la dirección web. Mientras tanto verás los recordatorios dentro de la app.'],
     default: ['warn', 'Los avisos del dispositivo aún no están activados. Verás los recordatorios dentro de la app.'],
-    'no-soportado': ['warn', 'Este navegador no admite avisos del dispositivo (en iPhone, instala MigraSense en la pantalla de inicio). Verás los recordatorios dentro de la app; usa el calendario para recibirlos con la app cerrada.']
+    'no-soportado': ['warn', 'Este navegador no admite avisos del dispositivo (en iPhone, instala MigraSense en la pantalla de inicio). Verás los avisos dentro de la app.']
   };
 
   function pintarRecordatorios() {
@@ -140,6 +147,7 @@ document.addEventListener('DOMContentLoaded', () => {
     $('pRemDaily').checked = s.daily.on;
     $('pDailyTime').value = s.daily.time;
     $('pRemWeekly').checked = s.weekly.on;
+    $('pRemAlerta').checked = s.alerta.on;
     $('pWeeklyDay').value = String(s.weekly.day);
     $('pWeeklyTime').value = s.weekly.time;
     const p = MSRec.permiso();
@@ -169,6 +177,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.target.checked) await activarSiHaceFalta();
     pintarRecordatorios(); MSRec.comprobar();
   });
+  $('pRemAlerta').addEventListener('change', async e => {
+    MSRec.update(s => { s.alerta.on = e.target.checked; });
+    msToast(e.target.checked ? 'Aviso de posible episodio activado' : 'Aviso de posible episodio desactivado', '⚠️');
+    if (e.target.checked) await activarSiHaceFalta();
+    pintarRecordatorios(); MSRec.comprobar();
+  });
   $('pDailyTime').addEventListener('change', e => {
     if (!HORA_OK(e.target.value)) { pintarRecordatorios(); return; }
     MSRec.update(s => { s.daily.time = e.target.value; s.dismissedDaily = ''; s.notifiedDaily = ''; s.snoozeUntil = 0; });
@@ -194,11 +208,16 @@ document.addEventListener('DOMContentLoaded', () => {
     pintarRecordatorios();
     if (r === 'ok') msToast('Notificación de prueba enviada', '🔔');
     else if (r === 'denied') msToast('Las notificaciones están bloqueadas en este navegador', '⚠️');
-    else if (r === 'no-soportado') msToast('Este navegador no admite notificaciones; usa el calendario', '⚠️');
+    else if (r === 'no-soportado') msToast('Este navegador no admite notificaciones del dispositivo', '⚠️');
     else msToast('No se pudo enviar la notificación', '⚠️');
   });
-  $('remIcsBtn').addEventListener('click', () => {
-    if (MSRec.descargarICS()) msToast('Ábrelo para añadir los recordatorios a tu calendario', '📅');
+  $('remTestAlertBtn').addEventListener('click', async () => {
+    const r = await MSRec.probarAlerta();
+    pintarRecordatorios();
+    if (r === 'ok') msToast('Aviso de prueba enviado', '⚠️');
+    else if (r === 'denied') msToast('Las notificaciones están bloqueadas en este navegador', '⚠️');
+    else if (r === 'no-soportado') msToast('Este navegador no admite notificaciones del dispositivo', '⚠️');
+    else msToast('No se pudo enviar la notificación', '⚠️');
   });
   if (location.hash === '#recordatorios') setTimeout(() => $('recordatorios').scrollIntoView({ behavior: 'smooth', block: 'start' }), 150);
 

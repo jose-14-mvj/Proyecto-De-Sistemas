@@ -9,8 +9,9 @@
    3. Aviso dentro de la app (banner) que se queda visible hasta que la
       persona registra, lo pospone o lo descarta. También sirve cuando el
       navegador no permite notificaciones (p. ej. Safari sin instalar).
-   4. Exportar a calendario (.ics): alarmas repetitivas que suenan con la
-      app CERRADA, gestionadas por el calendario del teléfono.
+   4. ALERTA DE POSIBLE EPISODIO DE MIGRAÑA (la más importante): aparece
+      cuando la probabilidad es muy alta e indica en cuántas horas podría
+      empezar el episodio (MSAnalisis.alertaEpisodio).
    5. Mensajes contextuales según el riesgo y los registros recientes.
 
    Limitación honesta: sin servidor, ningún navegador puede despertar una
@@ -20,7 +21,6 @@
 const MSRec = (() => {
   const DAY = 86400000;
   const DIAS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
-  const BYDAY = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
   const KEY = (typeof MS_KEYS !== 'undefined' && MS_KEYS.REMINDERS) || 'ms_reminders';
   const HORA_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
 
@@ -33,7 +33,9 @@ const MSRec = (() => {
   const porDefecto = () => ({
     daily: { on: true, time: '20:00' },
     weekly: { on: true, day: 0, time: '19:00' },
-    snoozeUntil: 0, notifiedDaily: '', notifiedWeekly: '', dismissedDaily: '', dismissedWeekly: ''
+    alerta: { on: true },
+    snoozeUntil: 0, notifiedDaily: '', notifiedWeekly: '', dismissedDaily: '', dismissedWeekly: '',
+    dismissedAlerta: '', notifiedAlerta: ''
   });
 
   function normalizar(raw) {
@@ -48,7 +50,8 @@ const MSRec = (() => {
       if (HORA_RE.test(w.time)) s.weekly.time = w.time;
       if (Number.isInteger(w.day) && w.day >= 0 && w.day <= 6) s.weekly.day = w.day;
     }
-    ['notifiedDaily', 'notifiedWeekly', 'dismissedDaily', 'dismissedWeekly'].forEach(k => { if (typeof raw[k] === 'string') s[k] = raw[k]; });
+    if (raw.alerta && typeof raw.alerta === 'object') s.alerta.on = raw.alerta.on !== false;
+    ['notifiedDaily', 'notifiedWeekly', 'dismissedDaily', 'dismissedWeekly', 'dismissedAlerta', 'notifiedAlerta'].forEach(k => { if (typeof raw[k] === 'string') s[k] = raw[k]; });
     if (Number.isFinite(raw.snoozeUntil)) s.snoozeUntil = raw.snoozeUntil;
     return s;
   }
@@ -121,55 +124,6 @@ const MSRec = (() => {
     return { titulo: 'Tu resumen semanal está listo', cuerpo };
   }
 
-  /* ---------- Calendario (.ics) ---------- */
-  const icsEsc = t => String(t).replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
-  function plegar(linea) {                      // RFC 5545: líneas de máx. 75 caracteres
-    if (linea.length <= 75) return linea;
-    let out = linea.slice(0, 75), resto = linea.slice(75);
-    while (resto.length) { out += '\r\n ' + resto.slice(0, 74); resto = resto.slice(74); }
-    return out;
-  }
-  const icsLocal = d => `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}T${pad(d.getHours())}${pad(d.getMinutes())}00`;
-  const icsUtc = d => `${d.getUTCFullYear()}${pad(d.getUTCMonth() + 1)}${pad(d.getUTCDate())}T${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}${pad(d.getUTCSeconds())}Z`;
-
-  /** Devuelve el texto .ics (o null si no hay recordatorios activos). Hora "flotante": suena a la hora local del teléfono. */
-  function crearICS(s, ahora = new Date()) {
-    const evento = (uid, resumen, descr, inicio, rrule) => [
-      'BEGIN:VEVENT', `UID:${uid}@migrasense`, `DTSTAMP:${icsUtc(ahora)}`,
-      `DTSTART:${icsLocal(inicio)}`, 'DURATION:PT10M', `RRULE:${rrule}`,
-      `SUMMARY:${icsEsc(resumen)}`, `DESCRIPTION:${icsEsc(descr)}`,
-      'BEGIN:VALARM', 'ACTION:DISPLAY', `DESCRIPTION:${icsEsc(resumen)}`, 'TRIGGER:PT0S', 'END:VALARM',
-      'END:VEVENT'
-    ];
-    const L = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//MigraSense//Recordatorios//ES', 'CALSCALE:GREGORIAN', 'X-WR-CALNAME:MigraSense'];
-    let n = 0;
-    if (s.daily.on) {
-      n++;
-      L.push(...evento('recordatorio-diario', 'MigraSense: registra tus síntomas', 'Abre MigraSense y registra cómo te sientes hoy.', aHora(ahora, s.daily.time), 'FREQ=DAILY'));
-    }
-    if (s.weekly.on) {
-      n++;
-      const f = aHora(ahora, s.weekly.time);
-      f.setDate(f.getDate() + ((s.weekly.day - f.getDay() + 7) % 7));
-      L.push(...evento('recordatorio-semanal', 'MigraSense: revisa tus patrones', 'Abre MigraSense y revisa tu resumen semanal.', f, `FREQ=WEEKLY;BYDAY=${BYDAY[s.weekly.day]}`));
-    }
-    if (!n) return null;
-    L.push('END:VCALENDAR');
-    return L.map(plegar).join('\r\n') + '\r\n';
-  }
-
-  function descargarICS() {
-    const txt = crearICS(get());
-    if (!txt) { if (typeof msToast === 'function') msToast('Activa al menos un recordatorio', '⚠️'); return false; }
-    const blob = new Blob([txt], { type: 'text/calendar;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = 'recordatorios-migrasense.ics';
-    document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-    return true;
-  }
-
   /* ---------- Notificaciones del dispositivo ---------- */
   const soporta = () => typeof window !== 'undefined' && 'Notification' in window;
   const permiso = () => soporta() ? Notification.permission : 'no-soportado';
@@ -204,23 +158,28 @@ const MSRec = (() => {
   /* ---------- Aviso dentro de la app ---------- */
   function quitarBanner() { const el = document.getElementById('remBanner'); if (el) el.remove(); }
 
-  function mostrarBanner(tipo, msg) {
+  function mostrarBanner(tipo, msg, extra = {}) {
     const host = document.querySelector('.screen');
     if (!host) return;
     const previo = document.getElementById('remBanner');
-    if (previo && previo.dataset.tipo === tipo) return;
+    if (previo && previo.dataset.tipo === tipo && previo.dataset.clave === (extra.clave || '')) return;
     if (previo) previo.remove();
     const el = document.createElement('div');
-    el.id = 'remBanner'; el.className = 'rem-banner'; el.dataset.tipo = tipo;
-    el.setAttribute('role', 'status');
+    const alerta = tipo === 'alerta';
     const diario = tipo === 'daily';
+    el.id = 'remBanner'; el.className = 'rem-banner' + (alerta ? ' rem-alerta' : ''); el.dataset.tipo = tipo; el.dataset.clave = extra.clave || '';
+    el.setAttribute('role', alerta ? 'alert' : 'status');
+    const acciones = alerta
+      ? `<a class="btn btn-primary btn-sm" href="registro.html?tab=prodromico">Registrar síntomas</a>
+         <a class="btn btn-outline btn-sm" href="consejos.html">Ver consejos</a>`
+      : `<a class="btn btn-primary btn-sm" href="${diario ? 'registro.html' : 'historial.html'}">${diario ? 'Registrar ahora' : 'Ver historial'}</a>
+         ${diario ? '<button type="button" class="btn btn-outline btn-sm" data-rem="snooze">En 1 hora</button>' : ''}`;
     el.innerHTML = `
-      <div class="rem-banner-icon" aria-hidden="true">🔔</div>
+      <div class="rem-banner-icon" aria-hidden="true">${alerta ? '⚠️' : '🔔'}</div>
       <div class="rem-banner-body"><strong>${esc(msg.titulo)}</strong><span>${esc(msg.cuerpo)}</span></div>
       <div class="rem-banner-actions">
-        <a class="btn btn-primary btn-sm" href="${diario ? 'registro.html' : 'historial.html'}">${diario ? 'Registrar ahora' : 'Ver historial'}</a>
-        ${diario ? '<button type="button" class="btn btn-outline btn-sm" data-rem="snooze">En 1 hora</button>' : ''}
-        <button type="button" class="rem-x" data-rem="dismiss" aria-label="Descartar recordatorio">×</button>
+        ${acciones}
+        <button type="button" class="rem-x" data-rem="dismiss" aria-label="Descartar aviso">×</button>
       </div>`;
     const topbar = host.querySelector('.topbar');
     host.insertBefore(el, topbar ? topbar.nextSibling : host.firstChild);
@@ -232,6 +191,8 @@ const MSRec = (() => {
       if (b.dataset.rem === 'snooze') {
         update(s => { s.snoozeUntil = Date.now() + 3600000; });
         if (typeof msToast === 'function') msToast('Te lo recordamos en 1 hora', '⏰');
+      } else if (alerta) {
+        update(s => { s.dismissedAlerta = extra.clave || hoy; });
       } else {
         update(s => { if (diario) s.dismissedDaily = hoy; else s.dismissedWeekly = hoy; });
       }
@@ -249,10 +210,24 @@ const MSRec = (() => {
     const ahora = Date.now(), hoy = dayKey(ahora);
     const s = get(), records = MS.get(MS_KEYS.RECORDS, []), onb = MS.get(MS_KEYS.ONBOARDING, {});
     const v = vencidos(s, records, ahora);
+    const visible = document.visibilityState === 'visible';
 
+    /* 1) Alerta de posible episodio: máxima prioridad */
+    const al = (s.alerta.on && typeof MSAnalisis !== 'undefined') ? MSAnalisis.alertaEpisodio(records, onb, ahora) : { activa: false };
+    const alertaVigente = al.activa && s.dismissedAlerta !== al.clave;
+    if (!alertaVigente) { const b = document.getElementById('remBanner'); if (b && b.dataset.tipo === 'alerta') quitarBanner(); }
+    if (alertaVigente && !visible && s.notifiedAlerta !== al.clave) {
+      const ok = await notificar({ titulo: '⚠️ ' + al.titulo, cuerpo: al.cuerpo, url: 'registro.html?tab=prodromico', tag: 'migrasense-alerta' });
+      if (ok) update(x => { x.notifiedAlerta = al.clave; });
+    }
+    if (alertaVigente && visible && !['registro.html'].includes(paginaActual())) {
+      mostrarBanner('alerta', al, { clave: al.clave });
+      return;
+    }
+
+    /* 2) Recordatorios diario y semanal */
     if (registroHoy(records, ahora) || !v.daily) { const b = document.getElementById('remBanner'); if (b && b.dataset.tipo === 'daily') quitarBanner(); }
 
-    const visible = document.visibilityState === 'visible';
     const items = [];
     if (v.daily) items.push({ tipo: 'daily', msg: mensajeDiario(records, onb, ahora), url: 'registro.html', notif: 'notifiedDaily' });
     if (v.weekly) items.push({ tipo: 'weekly', msg: mensajeSemanal(records, ahora), url: 'historial.html', notif: 'notifiedWeekly' });
@@ -285,10 +260,18 @@ const MSRec = (() => {
     return p;
   }
 
+  /** Notificación de ejemplo de "posible episodio" (para que la persona vea cómo se verá) */
+  async function probarAlerta() {
+    const p = await pedirPermiso();
+    const msg = { titulo: '⚠️ Posible episodio de migraña', cuerpo: 'En 5 a 10 horas puede que tengas un episodio de migraña. Descansa, hidrátate y evita tus desencadenantes.' };
+    if (p === 'granted') { const ok = await notificar({ ...msg, url: 'registro.html?tab=prodromico', tag: 'migrasense-alerta-prueba' }); return ok ? 'ok' : 'fallo'; }
+    return p;
+  }
+
   if (typeof document !== 'undefined') document.addEventListener('DOMContentLoaded', iniciar);
 
   return {
-    get, save, update, normalizar, vencidos, proximo, textoProximo, crearICS, descargarICS,
+    get, save, update, normalizar, vencidos, proximo, textoProximo, probarAlerta,
     mensajeDiario, mensajeSemanal, permiso, pedirPermiso, notificar, probar, comprobar,
     DIAS
   };

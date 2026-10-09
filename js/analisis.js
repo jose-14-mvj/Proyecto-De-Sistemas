@@ -147,5 +147,66 @@ const MSAnalisis = (() => {
     return out;
   }
 
-  return { riesgo, patrones };
+  /* ------------------------------------------------------------------
+     ALERTA DE POSIBLE EPISODIO
+     Se activa solo cuando la probabilidad es MUY ALTA (score >= UMBRAL_ALERTA)
+     y hay señales recientes de que el episodio está por empezar.
+     Calcula en cuántas horas podría aparecer la migraña usando tu propio
+     historial (tiempo entre un síntoma prodrómico y el episodio siguiente).
+     Este es el punto de conexión para el modelo de machine learning real:
+     basta con reemplazar el cálculo de `score` y de la ventana de horas por
+     la respuesta del modelo, manteniendo el mismo objeto de salida.
+     ------------------------------------------------------------------ */
+  const UMBRAL_ALERTA = 55;
+
+  const mediana = a => { const s = [...a].sort((x, y) => x - y), m = Math.floor(s.length / 2); return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
+
+  /** Horas típicas entre un síntoma prodrómico y el episodio que le siguió (máx. 72 h) */
+  function horasHastaEpisodio(recs) {
+    const prod = recs.filter(r => r.type === 'prodromico'), eps = recs.filter(r => r.type === 'episodio');
+    const lapsos = [];
+    prod.forEach(p => {
+      const sig = eps.map(e => (ts(e) - ts(p)) / 3600000).filter(h => h > 0 && h <= 72).sort((a, b) => a - b)[0];
+      if (sig !== undefined) lapsos.push(sig);
+    });
+    return lapsos.length >= 2 ? mediana(lapsos) : null;
+  }
+
+  function alertaEpisodio(registros, onb, ahora = Date.now()) {
+    const recs = registros || [];
+    const r = riesgo(recs, onb, ahora);
+    const horasDesde = x => (ahora - ts(x)) / 3600000;
+    const prodRecientes = recs.filter(x => x.type === 'prodromico' && horasDesde(x) >= 0 && horasDesde(x) <= 72)
+      .sort((a, b) => ts(b) - ts(a));
+    const hayRitmo = r.factores.some(f => f.grupo === 'ritmo');
+    const base = { activa: false, score: r.score, nivel: r.nivel, motivos: r.factores.slice(0, 3).map(f => f.texto) };
+
+    if (r.score < UMBRAL_ALERTA || (!prodRecientes.length && !hayRitmo)) return base;
+
+    // Ventana estimada (en horas desde ahora)
+    let desde, hasta;
+    const tipico = horasHastaEpisodio(recs);          // p. ej. 8 h entre el aviso y el dolor
+    if (prodRecientes.length) {
+      const transcurridas = horasDesde(prodRecientes[0]);
+      const centro = tipico !== null ? tipico : 12;    // sin historial suficiente: 12 h de referencia
+      const margen = Math.max(2, centro * 0.4);
+      desde = centro - margen - transcurridas;
+      hasta = centro + margen - transcurridas;
+    } else {                                           // solo por el ritmo de tus episodios
+      desde = 6; hasta = 24;
+    }
+    desde = Math.max(0, Math.round(desde));
+    hasta = Math.max(desde + 1, Math.round(hasta));
+    if (desde === 0 && hasta <= 1) hasta = 2;
+    const texto = desde === 0
+      ? `En las próximas ${hasta} horas puede que tengas un episodio de migraña.`
+      : `En ${desde} a ${hasta} horas puede que tengas un episodio de migraña.`;
+    const clave = prodRecientes.length ? 'p' + prodRecientes[0].id : 'r' + new Date(ahora).toISOString().slice(0, 10);
+
+    return { ...base, activa: true, desde, hasta, texto, clave,
+      titulo: 'Posible episodio de migraña',
+      cuerpo: texto + ' Descansa, hidrátate y evita tus desencadenantes.' };
+  }
+
+  return { riesgo, patrones, alertaEpisodio, UMBRAL_ALERTA };
 })();
