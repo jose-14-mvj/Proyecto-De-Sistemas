@@ -1606,3 +1606,65 @@ body{ min-height:100vh; min-height:100dvh; }
   .app-shell.no-nav.auth-split .screen .brand img{ width:clamp(72px, 22vw, 92px); }
   .app-shell.no-nav.auth-split .screen-form{ padding-top:60px; }
 }
+
+/* =====================================================================
+   CORRECCIÓN: PERFIL (y cualquier pantalla) SE SALÍA POR LA DERECHA EN CELULAR
+   Causa: las cuadrículas usaban "1fr", que equivale a minmax(auto,1fr) y no
+   puede ser más angosta que su contenido. Un nombre/correo largo o un
+   <input> con su ancho natural ensanchaba toda la columna y la página
+   quedaba más ancha que la pantalla (tarjetas cortadas a la derecha).
+   Solución: columnas minmax(0,1fr), min-width:0 en los hijos, inputs al
+   100% y texto largo que se corta/ajusta en vez de empujar el diseño.
+   (pegar AL FINAL de style.css)
+   ===================================================================== */
+.profile-grid{ grid-template-columns:minmax(0,1fr); }
+.profile-col{ min-width:0; }
+.screen, .card, .profile-head, .report-cta, .field, .input-wrap, .settings-row{ min-width:0; max-width:100%; }
+
+/* Inputs: nunca más anchos que su tarjeta */
+.input-wrap{ width:100%; }
+.input-wrap input{ min-width:0; width:100%; flex:1 1 auto; text-overflow:ellipsis; }
+
+/* Nombre y correo largos: se ajustan al ancho disponible */
+.profile-head .center{ width:100%; max-width:100%; min-width:0; }
+#profileName{ max-width:100%; overflow-wrap:anywhere; word-break:break-word; line-height:1.25; }
+#profileEmail{ max-width:100%; overflow-wrap:anywhere; word-break:break-word; }
+
+/* Tarjeta de "Generar reporte": el texto puede bajar de línea */
+.report-cta{ max-width:100%; }
+.report-cta-text strong, .report-cta-text span{ overflow-wrap:anywhere; }
+
+/* Las filas de ajustes y listas largas tampoco empujan el ancho */
+.settings-row > *, .settings-label{ min-width:0; }
+.settings-label > div{ min-width:0; overflow-wrap:anywhere; }
+
+/* Cuadrículas con "auto-fit/minmax(Npx)" fijos: en pantallas angostas bajan a 1 columna sin salirse */
+@media (max-width:640px){
+  .tips-grid,
+  .edit-grid,
+  #guias,
+  .records-grid{ grid-template-columns:minmax(0,1fr); }
+}
+
+/* Recordatorios: las filas con hora / día (select + time + interruptor) no caben
+   en una sola línea en celular. Ahora el texto ocupa la primera línea y los
+   controles bajan a la segunda, alineados a la derecha. */
+.settings-row{ gap:12px; }
+.settings-label{ flex:1 1 auto; }
+.rem-controls{ flex:none; flex-wrap:nowrap; }
+.rem-time{ min-width:0; max-width:100%; }
+@media (max-width:520px){
+  .settings-row:has(.rem-time){ flex-wrap:wrap; }
+  .settings-row:has(.rem-time) .settings-label{ flex:1 1 100%; }
+  .settings-row:has(.rem-time) .rem-controls{
+    flex:1 1 100%; width:100%; justify-content:flex-end; flex-wrap:wrap;
+  }
+  .rem-actions .btn{ flex:1 1 100%; width:100%; }
+}
+
+/* Red de seguridad: nada puede ensanchar la página horizontalmente */
+body{ max-width:100%; overflow-x:hidden; }
+@media (min-width:900px){
+  /* en escritorio la barra lateral usa position:sticky; "clip" no rompe sticky */
+  body{ overflow-x:clip; }
+}
