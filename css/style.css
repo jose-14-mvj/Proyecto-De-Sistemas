@@ -1498,3 +1498,111 @@ html[data-theme="dark"] .scroll-hint{ color:#0b1424; }
 @keyframes msHintBounce{ 0%,100%{ transform:translateY(-2px); } 50%{ transform:translateY(4px); } }
 @media (prefers-reduced-motion:reduce){ .scroll-hint svg{ animation:none; } }
 @media (min-width:900px){ .scroll-hint{ display:none; } }
+/* =====================================================================
+   CORRECCIÓN RESPONSIVA PARA CELULAR  (pegar AL FINAL de style.css)
+   Problemas que resuelve:
+   1) 100vh en celular incluye la zona de la barra del navegador, por eso
+      la pantalla de inicio "se pasaba" de alto y el logo quedaba mal
+      centrado / cortado. Ahora se usa 100dvh (alto real visible) con
+      100vh como respaldo para navegadores viejos.
+   2) El padding del contenedor se SUMABA al min-height y creaba scroll
+      innecesario en la pantalla de inicio y en el cuestionario.
+   3) El botón flotante "Modo oscuro" (position:fixed) tapaba la esquina
+      del logo en login y registro.
+   4) El tamaño del logo ahora se adapta al ancho/alto de cada celular.
+   ===================================================================== */
+
+/* ---------- Alto real de la pantalla (respaldo + dvh) ---------- */
+html{ -webkit-text-size-adjust:100%; text-size-adjust:100%; }
+body{ min-height:100vh; min-height:100dvh; }
+.app-shell{ min-height:100vh; min-height:100dvh; }
+
+/* ---------- Pantalla de inicio (splash) ---------- */
+.app-shell:has(.screen-splash){
+  display:flex; flex-direction:column;
+  padding-bottom:0;
+}
+.screen-splash{
+  flex:1 1 auto;
+  min-height:0;
+  width:100%;
+  display:flex; align-items:center; justify-content:center;
+  padding:
+    max(24px, env(safe-area-inset-top))
+    max(24px, env(safe-area-inset-right))
+    max(24px, env(safe-area-inset-bottom))
+    max(24px, env(safe-area-inset-left));
+}
+.screen-splash .brand{
+  position:relative; z-index:1;
+  gap:clamp(10px, 2.4vh, 18px);
+  max-width:100%;
+}
+.screen-splash .brand img{
+  width:clamp(132px, 46vw, 210px);
+  height:auto;
+  max-height:34vh; max-height:34dvh;
+  object-fit:contain;
+}
+.screen-splash .brand-name{ font-size:clamp(1.6rem, 7.4vw, 2.2rem); line-height:1.1; }
+
+/* Tablet / escritorio: el splash ocupa toda la ventana (sin tarjeta flotante,
+   así el margen superior/inferior ya no provoca scroll) */
+@media (min-width:560px){
+  .app-shell:has(.screen-splash){
+    max-width:none; width:100%;
+    margin:0; border-radius:0; box-shadow:none;
+    min-height:100vh; min-height:100dvh;
+  }
+}
+
+/* Celular en horizontal (poca altura): logo y nombre lado a lado */
+@media (max-height:480px) and (orientation:landscape){
+  .screen-splash .brand{ flex-direction:row; gap:18px; text-align:left; }
+  .screen-splash .brand img{ width:clamp(84px, 28vh, 120px); max-height:none; }
+  .screen-splash .brand-name{ font-size:clamp(1.5rem, 8vh, 2rem); }
+}
+
+/* ---------- Login / Registro / Cuestionario en celular ---------- */
+@media (max-width:899px){
+  /* El botón de tema ya no flota encima del logo: se mueve con la página */
+  .theme-fab{
+    position:absolute;
+    top:max(14px, env(safe-area-inset-top));
+    right:max(14px, env(safe-area-inset-right));
+    height:36px; padding:0 12px;
+    font-size:.74rem;
+  }
+  .theme-fab-opt{ gap:6px; }
+  .theme-fab-opt svg{ width:15px; height:15px; }
+
+  /* Espacio suficiente arriba para que el botón y el logo no se pisen */
+  .app-shell.no-nav.auth-split .screen-form{
+    padding-top:max(68px, calc(env(safe-area-inset-top) + 58px));
+    padding-left:max(24px, env(safe-area-inset-left));
+    padding-right:max(24px, env(safe-area-inset-right));
+  }
+  .app-shell.no-nav.auth-split .screen .brand{ margin-bottom:16px !important; }
+  .app-shell.no-nav.auth-split .screen .brand img{
+    width:clamp(88px, 27vw, 112px);
+    max-width:none;
+  }
+  .app-shell.no-nav.auth-split .screen .brand-name{ font-size:clamp(1.4rem, 6.4vw, 1.7rem); }
+
+  /* Cuestionario: sin scroll de más (el padding ya no se suma al alto) */
+  .app-shell.no-nav.onb-page{ padding-bottom:0; }
+  .onb-page .screen{ min-height:100vh; min-height:100dvh; }
+}
+
+/* Pantallas muy angostas (≤ 360px) */
+@media (max-width:360px){
+  .screen{ padding-left:18px; padding-right:18px; }
+  .app-shell.no-nav.auth-split .screen-form{ padding-left:18px; padding-right:18px; }
+  .theme-fab{ padding:0 10px; font-size:.7rem; }
+}
+
+/* Pantallas bajitas (celulares chicos / teclado abierto) */
+@media (max-width:899px) and (max-height:620px){
+  .app-shell.no-nav.auth-split .screen .brand img{ width:clamp(72px, 22vw, 92px); }
+  .app-shell.no-nav.auth-split .screen-form{ padding-top:60px; }
+}
