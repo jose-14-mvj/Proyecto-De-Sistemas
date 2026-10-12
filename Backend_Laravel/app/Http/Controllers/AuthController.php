@@ -5,12 +5,17 @@ namespace App\Http\Controllers;
 use App\Http\Requests\LoginRequest;
 use App\Http\Requests\RegistroRequest;
 use App\Models\Usuario;
+use App\Services\PerfilService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
 {
+    public function __construct(private PerfilService $perfiles)
+    {
+    }
+
     /** POST /api/registro */
     public function registro(RegistroRequest $request): JsonResponse
     {
@@ -26,7 +31,7 @@ class AuthController extends Controller
         return response()->json([
             'ok'      => true,
             'usuario' => $usuario->paraFrontend(),
-            'perfil'  => null,                         // Fase 4: cuestionario
+            'perfil'  => null,                         // cuenta recién creada: aún sin cuestionario
             'token'   => $this->nuevoToken($usuario),
         ], 201);
     }
@@ -58,7 +63,7 @@ class AuthController extends Controller
         return response()->json([
             'ok'      => true,
             'usuario' => $usuario->paraFrontend(),
-            'perfil'  => null,                         // Fase 4
+            'perfil'  => $this->perfiles->cargar($usuario->id_usuario),   // null si aún no hizo el cuestionario
             'token'   => $this->nuevoToken($usuario),
         ]);
     }
@@ -69,7 +74,7 @@ class AuthController extends Controller
         return response()->json([
             'ok'      => true,
             'usuario' => $request->user()->paraFrontend(),
-            'perfil'  => null,                         // Fase 4
+            'perfil'  => $this->perfiles->cargar($request->user()->id_usuario),
         ]);
     }
 

@@ -69,6 +69,11 @@ class RouteServiceProvider extends ServiceProvider
             return Limit::perHour(10)->by($request->ip());
         });
 
+        // Acciones delicadas (cambiar clave, borrar cuenta): 5 por minuto por usuario
+        RateLimiter::for('sensibles', function (Request $request) {
+            return Limit::perMinute(5)->by($request->user()?->id_usuario ?: $request->ip());
+        });
+
         RateLimiter::for('api', function (Request $request) {
             return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
         });
