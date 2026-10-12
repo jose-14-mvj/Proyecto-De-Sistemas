@@ -1,3 +1,7 @@
+DROP DATABASE IF EXISTS `migrasense`;
+CREATE DATABASE `migrasense` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE `migrasense`;
+
 -- phpMyAdmin SQL Dump
 -- version 5.2.1
 -- https://www.phpmyadmin.net/
@@ -26,14 +30,14 @@ DELIMITER $$
 -- Procedimientos
 --
 DROP PROCEDURE IF EXISTS `sp_crear_notificacion`$$
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_crear_notificacion` (IN `p_id_usuario` INT UNSIGNED, IN `p_tipo` VARCHAR(25), IN `p_mensaje` VARCHAR(255), IN `p_id_recordatorio` INT UNSIGNED, OUT `p_id_notificacion` BIGINT UNSIGNED)   BEGIN
+CREATE PROCEDURE `sp_crear_notificacion` (IN `p_id_usuario` INT UNSIGNED, IN `p_tipo` VARCHAR(25), IN `p_mensaje` VARCHAR(255), IN `p_id_recordatorio` INT UNSIGNED, OUT `p_id_notificacion` BIGINT UNSIGNED)   BEGIN
   INSERT INTO notificacion (id_usuario, id_recordatorio, tipo, mensaje)
   VALUES (p_id_usuario, p_id_recordatorio, p_tipo, p_mensaje);
   SET p_id_notificacion = LAST_INSERT_ID();
 END$$
 
 DROP PROCEDURE IF EXISTS `sp_editar_registro`$$
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_editar_registro` (IN `p_id_usuario` INT UNSIGNED, IN `p_tipo` VARCHAR(12), IN `p_id` BIGINT UNSIGNED, IN `p_intensidad` TINYINT UNSIGNED, IN `p_notas` VARCHAR(500), IN `p_medicamento` VARCHAR(80))   BEGIN
+CREATE PROCEDURE `sp_editar_registro` (IN `p_id_usuario` INT UNSIGNED, IN `p_tipo` VARCHAR(12), IN `p_id` BIGINT UNSIGNED, IN `p_intensidad` TINYINT UNSIGNED, IN `p_notas` VARCHAR(500), IN `p_medicamento` VARCHAR(80))   BEGIN
   IF p_tipo = 'prodromico' THEN
     IF NOT EXISTS (SELECT 1 FROM registro_sintoma WHERE id_registro = p_id AND id_usuario = p_id_usuario) THEN
       SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Registro no encontrado';
@@ -62,7 +66,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_editar_registro` (IN `p_id_usuar
 END$$
 
 DROP PROCEDURE IF EXISTS `sp_eliminar_registro`$$
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_eliminar_registro` (IN `p_id_usuario` INT UNSIGNED, IN `p_tipo` VARCHAR(12), IN `p_id` BIGINT UNSIGNED)   BEGIN
+CREATE PROCEDURE `sp_eliminar_registro` (IN `p_id_usuario` INT UNSIGNED, IN `p_tipo` VARCHAR(12), IN `p_id` BIGINT UNSIGNED)   BEGIN
   IF p_tipo = 'prodromico' THEN
     DELETE FROM registro_sintoma WHERE id_registro = p_id AND id_usuario = p_id_usuario;
   ELSEIF p_tipo = 'episodio' THEN
@@ -73,7 +77,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_eliminar_registro` (IN `p_id_usu
 END$$
 
 DROP PROCEDURE IF EXISTS `sp_generar_reporte`$$
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_generar_reporte` (IN `p_id_usuario` INT UNSIGNED, IN `p_dias` INT, IN `p_formato` VARCHAR(3), OUT `p_id_reporte` BIGINT UNSIGNED)   BEGIN
+CREATE PROCEDURE `sp_generar_reporte` (IN `p_id_usuario` INT UNSIGNED, IN `p_dias` INT, IN `p_formato` VARCHAR(3), OUT `p_id_reporte` BIGINT UNSIGNED)   BEGIN
   DECLARE v_fin DATE DEFAULT CURDATE();
   DECLARE v_ini DATE;
   DECLARE v_et VARCHAR(30);
@@ -112,7 +116,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_generar_reporte` (IN `p_id_usuar
 END$$
 
 DROP PROCEDURE IF EXISTS `sp_guardar_perfil`$$
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_guardar_perfil` (IN `p_id_usuario` INT UNSIGNED, IN `p_genero` VARCHAR(15), IN `p_ocupacion` VARCHAR(20), IN `p_antiguedad` VARCHAR(15), IN `p_frecuencia` VARCHAR(15), IN `p_patron_aparicion` VARCHAR(2), IN `p_orden_aparicion` VARCHAR(12), IN `p_inicio_momento_dia` VARCHAR(12), IN `p_duracion` VARCHAR(10), IN `p_intensidad` VARCHAR(12), IN `p_conoce_prodromica` VARCHAR(10), IN `p_horas_sueno` VARCHAR(10), IN `p_nivel_estres` VARCHAR(10), IN `p_consume_cafeina` VARCHAR(2), IN `p_cantidad_cafeina` VARCHAR(6), IN `p_condiciones` TEXT)   BEGIN
+CREATE PROCEDURE `sp_guardar_perfil` (IN `p_id_usuario` INT UNSIGNED, IN `p_genero` VARCHAR(15), IN `p_ocupacion` VARCHAR(20), IN `p_antiguedad` VARCHAR(15), IN `p_frecuencia` VARCHAR(15), IN `p_patron_aparicion` VARCHAR(2), IN `p_orden_aparicion` VARCHAR(12), IN `p_inicio_momento_dia` VARCHAR(12), IN `p_duracion` VARCHAR(10), IN `p_intensidad` VARCHAR(12), IN `p_conoce_prodromica` VARCHAR(10), IN `p_horas_sueno` VARCHAR(10), IN `p_nivel_estres` VARCHAR(10), IN `p_consume_cafeina` VARCHAR(2), IN `p_cantidad_cafeina` VARCHAR(6), IN `p_condiciones` TEXT)   BEGIN
   DECLARE v_id_perfil  INT UNSIGNED DEFAULT NULL;
   DECLARE v_id_patron  TINYINT UNSIGNED DEFAULT NULL;
   DECLARE v_id_cafeina TINYINT UNSIGNED DEFAULT NULL;
@@ -176,7 +180,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_guardar_perfil` (IN `p_id_usuari
 END$$
 
 DROP PROCEDURE IF EXISTS `sp_guardar_recordatorio`$$
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_guardar_recordatorio` (IN `p_id_usuario` INT UNSIGNED, IN `p_frecuencia` VARCHAR(8), IN `p_activo` TINYINT, IN `p_hora` TIME, IN `p_dia_semana` TINYINT UNSIGNED)   BEGIN
+CREATE PROCEDURE `sp_guardar_recordatorio` (IN `p_id_usuario` INT UNSIGNED, IN `p_frecuencia` VARCHAR(8), IN `p_activo` TINYINT, IN `p_hora` TIME, IN `p_dia_semana` TINYINT UNSIGNED)   BEGIN
   DECLARE v_dia TINYINT UNSIGNED;
   IF p_frecuencia NOT IN ('diaria','semanal') THEN
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Frecuencia inválida';
@@ -197,7 +201,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_guardar_recordatorio` (IN `p_id_
 END$$
 
 DROP PROCEDURE IF EXISTS `sp_historial_usuario`$$
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_historial_usuario` (IN `p_id_usuario` INT UNSIGNED, IN `p_tipo` VARCHAR(12), IN `p_dias` INT)   BEGIN
+CREATE PROCEDURE `sp_historial_usuario` (IN `p_id_usuario` INT UNSIGNED, IN `p_tipo` VARCHAR(12), IN `p_dias` INT)   BEGIN
   SELECT *
     FROM v_historial h
    WHERE h.id_usuario = p_id_usuario
@@ -207,7 +211,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_historial_usuario` (IN `p_id_usu
 END$$
 
 DROP PROCEDURE IF EXISTS `sp_marcar_notificacion`$$
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_marcar_notificacion` (IN `p_id_usuario` INT UNSIGNED, IN `p_id_notificacion` BIGINT UNSIGNED, IN `p_estado` VARCHAR(12))   BEGIN
+CREATE PROCEDURE `sp_marcar_notificacion` (IN `p_id_usuario` INT UNSIGNED, IN `p_id_notificacion` BIGINT UNSIGNED, IN `p_estado` VARCHAR(12))   BEGIN
   IF p_estado NOT IN ('enviada','leida','descartada') THEN
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Estado inválido';
   END IF;
@@ -216,7 +220,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_marcar_notificacion` (IN `p_id_u
 END$$
 
 DROP PROCEDURE IF EXISTS `sp_registrar_episodio`$$
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_registrar_episodio` (IN `p_id_usuario` INT UNSIGNED, IN `p_nivel_dolor` TINYINT UNSIGNED, IN `p_duracion` VARCHAR(10), IN `p_inicio` DATETIME, IN `p_medicacion` TINYINT, IN `p_medicamento` VARCHAR(80), IN `p_notas` VARCHAR(500), IN `p_sintomas` TEXT, IN `p_desencadenantes` TEXT, OUT `p_id_episodio` BIGINT UNSIGNED)   BEGIN
+CREATE PROCEDURE `sp_registrar_episodio` (IN `p_id_usuario` INT UNSIGNED, IN `p_nivel_dolor` TINYINT UNSIGNED, IN `p_duracion` VARCHAR(10), IN `p_inicio` DATETIME, IN `p_medicacion` TINYINT, IN `p_medicamento` VARCHAR(80), IN `p_notas` VARCHAR(500), IN `p_sintomas` TEXT, IN `p_desencadenantes` TEXT, OUT `p_id_episodio` BIGINT UNSIGNED)   BEGIN
   DECLARE v_ts DATETIME;
   DECLARE v_pedidos INT DEFAULT 0;
   DECLARE v_validos INT DEFAULT 0;
@@ -270,7 +274,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_registrar_episodio` (IN `p_id_us
 END$$
 
 DROP PROCEDURE IF EXISTS `sp_registrar_prodromico`$$
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_registrar_prodromico` (IN `p_id_usuario` INT UNSIGNED, IN `p_intensidad` TINYINT UNSIGNED, IN `p_notas` VARCHAR(500), IN `p_sintomas` TEXT, IN `p_fecha_hora` DATETIME, OUT `p_id_registro` BIGINT UNSIGNED)   BEGIN
+CREATE PROCEDURE `sp_registrar_prodromico` (IN `p_id_usuario` INT UNSIGNED, IN `p_intensidad` TINYINT UNSIGNED, IN `p_notas` VARCHAR(500), IN `p_sintomas` TEXT, IN `p_fecha_hora` DATETIME, OUT `p_id_registro` BIGINT UNSIGNED)   BEGIN
   DECLARE v_ts DATETIME;
   DECLARE v_pedidos INT DEFAULT 0;
   DECLARE v_validos INT DEFAULT 0;
@@ -300,7 +304,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_registrar_prodromico` (IN `p_id_
 END$$
 
 DROP PROCEDURE IF EXISTS `sp_registrar_usuario`$$
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_registrar_usuario` (IN `p_nombres` VARCHAR(60), IN `p_correo` VARCHAR(60), IN `p_contrasena_hash` VARCHAR(255), OUT `p_id_usuario` INT UNSIGNED)   BEGIN
+CREATE PROCEDURE `sp_registrar_usuario` (IN `p_nombres` VARCHAR(60), IN `p_correo` VARCHAR(60), IN `p_contrasena_hash` VARCHAR(255), OUT `p_id_usuario` INT UNSIGNED)   BEGIN
   IF EXISTS (SELECT 1 FROM usuario WHERE correo = LOWER(TRIM(p_correo))) THEN
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'El correo ya está registrado';
   END IF;
@@ -845,7 +849,7 @@ CREATE TABLE `v_sintomas_frecuentes` (
 DROP TABLE IF EXISTS `v_desencadenantes_frecuentes`;
 
 DROP VIEW IF EXISTS `v_desencadenantes_frecuentes`;
-CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `v_desencadenantes_frecuentes`  AS SELECT `e`.`id_usuario` AS `id_usuario`, `t`.`codigo` AS `codigo`, `t`.`nombre` AS `nombre`, count(0) AS `veces` FROM ((`episodio_migrana` `e` join `episodio_desencadenante` `x` on(`x`.`id_episodio` = `e`.`id_episodio`)) join `desencadenante` `t` on(`t`.`id_desencadenante` = `x`.`id_desencadenante`)) GROUP BY `e`.`id_usuario`, `t`.`codigo`, `t`.`nombre` ;
+CREATE ALGORITHM=UNDEFINED SQL SECURITY DEFINER VIEW `v_desencadenantes_frecuentes`  AS SELECT `e`.`id_usuario` AS `id_usuario`, `t`.`codigo` AS `codigo`, `t`.`nombre` AS `nombre`, count(0) AS `veces` FROM ((`episodio_migrana` `e` join `episodio_desencadenante` `x` on(`x`.`id_episodio` = `e`.`id_episodio`)) join `desencadenante` `t` on(`t`.`id_desencadenante` = `x`.`id_desencadenante`)) GROUP BY `e`.`id_usuario`, `t`.`codigo`, `t`.`nombre` ;
 
 -- --------------------------------------------------------
 
@@ -855,7 +859,7 @@ CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW 
 DROP TABLE IF EXISTS `v_episodios_semana`;
 
 DROP VIEW IF EXISTS `v_episodios_semana`;
-CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `v_episodios_semana`  AS SELECT `episodio_migrana`.`id_usuario` AS `id_usuario`, `episodio_migrana`.`fecha_inicio`- interval weekday(`episodio_migrana`.`fecha_inicio`) day AS `semana_inicio`, count(0) AS `episodios`, round(avg(`episodio_migrana`.`nivel_dolor`),1) AS `dolor_medio` FROM `episodio_migrana` GROUP BY `episodio_migrana`.`id_usuario`, `episodio_migrana`.`fecha_inicio`- interval weekday(`episodio_migrana`.`fecha_inicio`) AS `day` ;
+CREATE ALGORITHM=UNDEFINED SQL SECURITY DEFINER VIEW `v_episodios_semana`  AS SELECT `id_usuario` AS `id_usuario`, DATE_SUB(`fecha_inicio`, INTERVAL WEEKDAY(`fecha_inicio`) DAY) AS `semana_inicio`, COUNT(*) AS `episodios`, ROUND(AVG(`nivel_dolor`),1) AS `dolor_medio` FROM `episodio_migrana` GROUP BY `id_usuario`, DATE_SUB(`fecha_inicio`, INTERVAL WEEKDAY(`fecha_inicio`) DAY) ;
 
 -- --------------------------------------------------------
 
@@ -865,7 +869,7 @@ CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW 
 DROP TABLE IF EXISTS `v_historial`;
 
 DROP VIEW IF EXISTS `v_historial`;
-CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `v_historial`  AS SELECT `r`.`id_usuario` AS `id_usuario`, 'prodromico' AS `tipo`, `r`.`id_registro` AS `id`, 'Síntomas prodrómicos' AS `etiqueta`, timestamp(`r`.`fecha`,`r`.`hora`) AS `fecha_hora`, NULL AS `inicio`, `r`.`intensidad` AS `intensidad`, NULL AS `duracion`, NULL AS `medicacion`, NULL AS `medicamento`, `r`.`observacion` AS `notas`, (select group_concat(`s`.`nombre_sintoma` order by `s`.`id_sintoma` ASC separator ', ') from (`detalle_registro_sintoma` `d` join `sintoma_prodromico` `s` on(`s`.`id_sintoma` = `d`.`id_sintoma`)) where `d`.`id_registro` = `r`.`id_registro`) AS `sintomas`, NULL AS `desencadenantes` FROM `registro_sintoma` AS `r`union all select `e`.`id_usuario` AS `id_usuario`,'episodio' AS `episodio`,`e`.`id_episodio` AS `id_episodio`,'Episodio de migraña' AS `Episodio de migraña`,timestamp(`e`.`fecha_inicio`,`e`.`hora_inicio`) AS `TIMESTAMP(e.fecha_inicio, e.hora_inicio)`,timestamp(`e`.`fecha_inicio`,`e`.`hora_inicio`) AS `TIMESTAMP(e.fecha_inicio, e.hora_inicio)`,`e`.`nivel_dolor` AS `nivel_dolor`,`e`.`duracion` AS `duracion`,(select count(0) from `episodio_medicacion` `m` where `m`.`id_episodio` = `e`.`id_episodio`) AS `Name_exp_9`,(select `m`.`medicamento` from `episodio_medicacion` `m` where `m`.`id_episodio` = `e`.`id_episodio`) AS `Name_exp_10`,`e`.`notas` AS `notas`,(select group_concat(`s`.`nombre_sintoma` order by `s`.`id_sintoma` ASC separator ', ') from (`episodio_sintoma` `x` join `sintoma_prodromico` `s` on(`s`.`id_sintoma` = `x`.`id_sintoma`)) where `x`.`id_episodio` = `e`.`id_episodio`) AS `Name_exp_12`,(select group_concat(`t`.`nombre` order by `t`.`id_desencadenante` ASC separator ', ') from (`episodio_desencadenante` `y` join `desencadenante` `t` on(`t`.`id_desencadenante` = `y`.`id_desencadenante`)) where `y`.`id_episodio` = `e`.`id_episodio`) AS `Name_exp_13` from `episodio_migrana` `e`  ;
+CREATE ALGORITHM=UNDEFINED SQL SECURITY DEFINER VIEW `v_historial`  AS SELECT `r`.`id_usuario` AS `id_usuario`, 'prodromico' AS `tipo`, `r`.`id_registro` AS `id`, 'Síntomas prodrómicos' AS `etiqueta`, timestamp(`r`.`fecha`,`r`.`hora`) AS `fecha_hora`, NULL AS `inicio`, `r`.`intensidad` AS `intensidad`, NULL AS `duracion`, NULL AS `medicacion`, NULL AS `medicamento`, `r`.`observacion` AS `notas`, (select group_concat(`s`.`nombre_sintoma` order by `s`.`id_sintoma` ASC separator ', ') from (`detalle_registro_sintoma` `d` join `sintoma_prodromico` `s` on(`s`.`id_sintoma` = `d`.`id_sintoma`)) where `d`.`id_registro` = `r`.`id_registro`) AS `sintomas`, NULL AS `desencadenantes` FROM `registro_sintoma` AS `r`union all select `e`.`id_usuario` AS `id_usuario`,'episodio' AS `episodio`,`e`.`id_episodio` AS `id_episodio`,'Episodio de migraña' AS `Episodio de migraña`,timestamp(`e`.`fecha_inicio`,`e`.`hora_inicio`) AS `TIMESTAMP(e.fecha_inicio, e.hora_inicio)`,timestamp(`e`.`fecha_inicio`,`e`.`hora_inicio`) AS `TIMESTAMP(e.fecha_inicio, e.hora_inicio)`,`e`.`nivel_dolor` AS `nivel_dolor`,`e`.`duracion` AS `duracion`,(select count(0) from `episodio_medicacion` `m` where `m`.`id_episodio` = `e`.`id_episodio`) AS `Name_exp_9`,(select `m`.`medicamento` from `episodio_medicacion` `m` where `m`.`id_episodio` = `e`.`id_episodio`) AS `Name_exp_10`,`e`.`notas` AS `notas`,(select group_concat(`s`.`nombre_sintoma` order by `s`.`id_sintoma` ASC separator ', ') from (`episodio_sintoma` `x` join `sintoma_prodromico` `s` on(`s`.`id_sintoma` = `x`.`id_sintoma`)) where `x`.`id_episodio` = `e`.`id_episodio`) AS `Name_exp_12`,(select group_concat(`t`.`nombre` order by `t`.`id_desencadenante` ASC separator ', ') from (`episodio_desencadenante` `y` join `desencadenante` `t` on(`t`.`id_desencadenante` = `y`.`id_desencadenante`)) where `y`.`id_episodio` = `e`.`id_episodio`) AS `Name_exp_13` from `episodio_migrana` `e`  ;
 
 -- --------------------------------------------------------
 
@@ -875,7 +879,7 @@ CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW 
 DROP TABLE IF EXISTS `v_perfil_completo`;
 
 DROP VIEW IF EXISTS `v_perfil_completo`;
-CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `v_perfil_completo`  AS SELECT `u`.`id_usuario` AS `id_usuario`, `u`.`nombres` AS `nombres`, `u`.`paterno` AS `paterno`, `u`.`materno` AS `materno`, `u`.`correo` AS `correo`, `u`.`foto` AS `foto`, `u`.`fecha_nac` AS `fecha_nac`, `p`.`id_perfil` AS `id_perfil`, `p`.`genero` AS `genero`, `p`.`ocupacion` AS `ocupacion`, `p`.`antiguedad` AS `antiguedad`, `p`.`frecuencia` AS `frecuencia`, `pa`.`patron_aparicion` AS `patron_aparicion`, `pa`.`orden_aparicion` AS `orden_aparicion`, `p`.`inicio_momento_dia` AS `inicio_momento_dia`, `p`.`duracion` AS `duracion`, `p`.`intensidad` AS `intensidad`, `p`.`conoce_fase_prodromica` AS `conoce_fase_prodromica`, `p`.`horas_sueno` AS `horas_sueno`, `p`.`nivel_estres` AS `nivel_estres`, `cc`.`consume_cafeina` AS `consume_cafeina`, `cc`.`cantidad_cafeina` AS `cantidad_cafeina`, `p`.`fecha_completado` AS `fecha_completado`, (select group_concat(`c`.`codigo` order by `c`.`id_condicion` ASC separator ',') from (`perfil_condicion` `pc` join `condicion_medica` `c` on(`c`.`id_condicion` = `pc`.`id_condicion`)) where `pc`.`id_perfil` = `p`.`id_perfil`) AS `condiciones` FROM (((`usuario` `u` left join `perfil` `p` on(`p`.`id_usuario` = `u`.`id_usuario`)) left join `patron_aparicion` `pa` on(`pa`.`id_patron` = `p`.`id_patron`)) left join `consumo_cafeina` `cc` on(`cc`.`id_consumo_cafeina` = `p`.`id_consumo_cafeina`)) ;
+CREATE ALGORITHM=UNDEFINED SQL SECURITY DEFINER VIEW `v_perfil_completo`  AS SELECT `u`.`id_usuario` AS `id_usuario`, `u`.`nombres` AS `nombres`, `u`.`paterno` AS `paterno`, `u`.`materno` AS `materno`, `u`.`correo` AS `correo`, `u`.`foto` AS `foto`, `u`.`fecha_nac` AS `fecha_nac`, `p`.`id_perfil` AS `id_perfil`, `p`.`genero` AS `genero`, `p`.`ocupacion` AS `ocupacion`, `p`.`antiguedad` AS `antiguedad`, `p`.`frecuencia` AS `frecuencia`, `pa`.`patron_aparicion` AS `patron_aparicion`, `pa`.`orden_aparicion` AS `orden_aparicion`, `p`.`inicio_momento_dia` AS `inicio_momento_dia`, `p`.`duracion` AS `duracion`, `p`.`intensidad` AS `intensidad`, `p`.`conoce_fase_prodromica` AS `conoce_fase_prodromica`, `p`.`horas_sueno` AS `horas_sueno`, `p`.`nivel_estres` AS `nivel_estres`, `cc`.`consume_cafeina` AS `consume_cafeina`, `cc`.`cantidad_cafeina` AS `cantidad_cafeina`, `p`.`fecha_completado` AS `fecha_completado`, (select group_concat(`c`.`codigo` order by `c`.`id_condicion` ASC separator ',') from (`perfil_condicion` `pc` join `condicion_medica` `c` on(`c`.`id_condicion` = `pc`.`id_condicion`)) where `pc`.`id_perfil` = `p`.`id_perfil`) AS `condiciones` FROM (((`usuario` `u` left join `perfil` `p` on(`p`.`id_usuario` = `u`.`id_usuario`)) left join `patron_aparicion` `pa` on(`pa`.`id_patron` = `p`.`id_patron`)) left join `consumo_cafeina` `cc` on(`cc`.`id_consumo_cafeina` = `p`.`id_consumo_cafeina`)) ;
 
 -- --------------------------------------------------------
 
@@ -885,7 +889,7 @@ CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW 
 DROP TABLE IF EXISTS `v_resumen_30dias`;
 
 DROP VIEW IF EXISTS `v_resumen_30dias`;
-CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `v_resumen_30dias`  AS SELECT `u`.`id_usuario` AS `id_usuario`, (select count(0) from `episodio_migrana` `e` where `e`.`id_usuario` = `u`.`id_usuario` and `e`.`fecha_inicio` >= curdate() - interval 30 day) AS `episodios_30d`, (select count(0) from `registro_sintoma` `r` where `r`.`id_usuario` = `u`.`id_usuario` and `r`.`fecha` >= curdate() - interval 30 day) AS `prodromicos_30d`, (select round(avg(`h`.`intensidad`),1) from `v_historial` `h` where `h`.`id_usuario` = `u`.`id_usuario` and `h`.`fecha_hora` >= current_timestamp() - interval 30 day) AS `intensidad_media_30d`, (select count(0) from `episodio_migrana` `e2` where `e2`.`id_usuario` = `u`.`id_usuario`) + (select count(0) from `registro_sintoma` `r2` where `r2`.`id_usuario` = `u`.`id_usuario`) AS `registros_totales` FROM `usuario` AS `u` ;
+CREATE ALGORITHM=UNDEFINED SQL SECURITY DEFINER VIEW `v_resumen_30dias`  AS SELECT `u`.`id_usuario` AS `id_usuario`, (select count(0) from `episodio_migrana` `e` where `e`.`id_usuario` = `u`.`id_usuario` and `e`.`fecha_inicio` >= curdate() - interval 30 day) AS `episodios_30d`, (select count(0) from `registro_sintoma` `r` where `r`.`id_usuario` = `u`.`id_usuario` and `r`.`fecha` >= curdate() - interval 30 day) AS `prodromicos_30d`, (select round(avg(`h`.`intensidad`),1) from `v_historial` `h` where `h`.`id_usuario` = `u`.`id_usuario` and `h`.`fecha_hora` >= current_timestamp() - interval 30 day) AS `intensidad_media_30d`, (select count(0) from `episodio_migrana` `e2` where `e2`.`id_usuario` = `u`.`id_usuario`) + (select count(0) from `registro_sintoma` `r2` where `r2`.`id_usuario` = `u`.`id_usuario`) AS `registros_totales` FROM `usuario` AS `u` ;
 
 -- --------------------------------------------------------
 
@@ -895,7 +899,7 @@ CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW 
 DROP TABLE IF EXISTS `v_sintomas_frecuentes`;
 
 DROP VIEW IF EXISTS `v_sintomas_frecuentes`;
-CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `v_sintomas_frecuentes`  AS SELECT `q`.`id_usuario` AS `id_usuario`, `s`.`codigo` AS `codigo`, `s`.`nombre_sintoma` AS `nombre_sintoma`, count(0) AS `veces` FROM ((select `r`.`id_usuario` AS `id_usuario`,`d`.`id_sintoma` AS `id_sintoma` from (`registro_sintoma` `r` join `detalle_registro_sintoma` `d` on(`d`.`id_registro` = `r`.`id_registro`)) union all select `e`.`id_usuario` AS `id_usuario`,`es`.`id_sintoma` AS `id_sintoma` from (`episodio_migrana` `e` join `episodio_sintoma` `es` on(`es`.`id_episodio` = `e`.`id_episodio`))) `q` join `sintoma_prodromico` `s` on(`s`.`id_sintoma` = `q`.`id_sintoma`)) GROUP BY `q`.`id_usuario`, `s`.`codigo`, `s`.`nombre_sintoma` ;
+CREATE ALGORITHM=UNDEFINED SQL SECURITY DEFINER VIEW `v_sintomas_frecuentes`  AS SELECT `q`.`id_usuario` AS `id_usuario`, `s`.`codigo` AS `codigo`, `s`.`nombre_sintoma` AS `nombre_sintoma`, count(0) AS `veces` FROM ((select `r`.`id_usuario` AS `id_usuario`,`d`.`id_sintoma` AS `id_sintoma` from (`registro_sintoma` `r` join `detalle_registro_sintoma` `d` on(`d`.`id_registro` = `r`.`id_registro`)) union all select `e`.`id_usuario` AS `id_usuario`,`es`.`id_sintoma` AS `id_sintoma` from (`episodio_migrana` `e` join `episodio_sintoma` `es` on(`es`.`id_episodio` = `e`.`id_episodio`))) `q` join `sintoma_prodromico` `s` on(`s`.`id_sintoma` = `q`.`id_sintoma`)) GROUP BY `q`.`id_usuario`, `s`.`codigo`, `s`.`nombre_sintoma` ;
 
 --
 -- Índices para tablas volcadas
