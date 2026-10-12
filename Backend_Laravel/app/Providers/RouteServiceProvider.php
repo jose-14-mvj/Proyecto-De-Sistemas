@@ -56,6 +56,19 @@ class RouteServiceProvider extends ServiceProvider
      */
     protected function configureRateLimiting()
     {
+        // Login: 5 intentos/min por (correo + IP) y 20/min por IP -> frena fuerza bruta
+        RateLimiter::for('login', function (Request $request) {
+            return [
+                Limit::perMinute(5)->by(strtolower((string) $request->input('email')).'|'.$request->ip()),
+                Limit::perMinute(20)->by($request->ip()),
+            ];
+        });
+
+        // Registro: 10 cuentas por hora por IP
+        RateLimiter::for('registro', function (Request $request) {
+            return Limit::perHour(10)->by($request->ip());
+        });
+
         RateLimiter::for('api', function (Request $request) {
             return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
         });

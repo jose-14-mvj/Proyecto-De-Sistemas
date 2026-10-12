@@ -1,19 +1,18 @@
 <?php
 
-use Illuminate\Http\Request;
+use App\Http\Controllers\AuthController;
 use Illuminate\Support\Facades\Route;
 
 /*
-|--------------------------------------------------------------------------
-| API Routes
-|--------------------------------------------------------------------------
-|
-| Here is where you can register API routes for your application. These
-| routes are loaded by the RouteServiceProvider within a group which
-| is assigned the "api" middleware group. Enjoy building your API!
-|
+| API de MigraSense. Prefijo automático: /api
 */
 
-Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-    return $request->user();
+// Públicas (con límite de intentos, ver RouteServiceProvider)
+Route::post('/registro', [AuthController::class, 'registro'])->middleware('throttle:registro');
+Route::post('/login',    [AuthController::class, 'login'])->middleware('throttle:login');
+
+// Protegidas: requieren "Authorization: Bearer <token>"
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/sesion',  [AuthController::class, 'sesion']);
+    Route::post('/logout', [AuthController::class, 'logout']);
 });
