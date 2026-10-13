@@ -56,6 +56,9 @@ return [
 
     'url' => env('APP_URL', 'http://localhost'),
 
+    // Proxies de confianza (Render): "*" en producción, vacío en local. Ver TrustProxies.
+    'trusted_proxies' => env('TRUSTED_PROXIES', ''),
+
     'asset_url' => env('ASSET_URL', null),
 
     /*

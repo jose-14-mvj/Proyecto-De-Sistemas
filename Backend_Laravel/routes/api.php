@@ -6,6 +6,7 @@ use App\Http\Controllers\CuentaController;
 use App\Http\Controllers\EstadisticaController;
 use App\Http\Controllers\NotificacionController;
 use App\Http\Controllers\PerfilController;
+use App\Http\Controllers\PrediccionController;
 use App\Http\Controllers\RecordatorioController;
 use App\Http\Controllers\RegistroController;
 use App\Http\Controllers\ReporteController;
@@ -54,6 +55,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/reportes', [ReporteController::class, 'crear']);
     Route::get('/reportes/{id}', [ReporteController::class, 'mostrar'])->whereNumber('id');
     Route::delete('/reportes/{id}', [ReporteController::class, 'eliminar'])->whereNumber('id');
+
+    // Predicción de migraña (servicio de ML). Máx. 10 por minuto: cada llamada puede ir a Render
+    Route::get('/prediccion', [PrediccionController::class, 'mostrar'])->middleware('throttle:10,1');
 
     // Cuenta
     Route::put('/cuenta', [CuentaController::class, 'actualizar']);

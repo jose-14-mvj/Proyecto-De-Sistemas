@@ -281,6 +281,8 @@ INSERT INTO sintoma_prodromico (codigo, nombre_sintoma, activo) VALUES
  ('luz', 'Sensibilidad a la luz', 1),
  ('ruido', 'Sensibilidad al ruido', 1),
  ('nauseas', 'Náuseas', 1),
+ ('bostezos_repetidos', 'Bostezos repetidos', 1),
+ ('cervical', 'Dolor o rigidez cervical', 1),
  ('sonido', 'Sensibilidad al sonido (antiguo)', 0);
 
 INSERT INTO desencadenante (codigo, nombre, activo) VALUES

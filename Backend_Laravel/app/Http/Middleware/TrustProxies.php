@@ -25,4 +25,16 @@ class TrustProxies extends Middleware
         Request::HEADER_X_FORWARDED_PORT |
         Request::HEADER_X_FORWARDED_PROTO |
         Request::HEADER_X_FORWARDED_AWS_ELB;
+
+    /**
+     * En Render la app está detrás de su balanceador (que maneja el HTTPS). Hay que confiar
+     * en él para saber la IP real del visitante (los límites de intentos son por IP) y que
+     * la petición llegó por HTTPS. Se controla con TRUSTED_PROXIES en el .env:
+     *   vacío = no confiar en nadie (local) · "*" = el proxy que llama (Render).
+     */
+    protected function proxies()
+    {
+        $v = (string) config('app.trusted_proxies', '');
+        return $v === '*' ? '*' : ($v !== '' ? array_map('trim', explode(',', $v)) : $this->proxies);
+    }
 }

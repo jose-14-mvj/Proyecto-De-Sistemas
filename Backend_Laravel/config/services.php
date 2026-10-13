@@ -24,6 +24,13 @@ return [
         'token' => env('POSTMARK_TOKEN'),
     ],
 
+    // Servicio de predicción de MigraSense (FastAPI en Render)
+    'ml' => [
+        'url'     => rtrim((string) env('ML_URL', ''), '/'),
+        'key'     => env('ML_API_KEY'),
+        'timeout' => (int) env('ML_TIMEOUT', 70),   // Render gratis "duerme": la 1.ª llamada tarda ~1 min
+    ],
+
     'ses' => [
         'key' => env('AWS_ACCESS_KEY_ID'),
         'secret' => env('AWS_SECRET_ACCESS_KEY'),

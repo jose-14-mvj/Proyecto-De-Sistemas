@@ -24,6 +24,21 @@ class SeguridadTest extends TestCase
         $this->getJson('https://localhost/api/sesion')->assertHeader('Strict-Transport-Security');
     }
 
+    public function test_detras_del_proxy_de_render_reconoce_https_e_ip_real(): void
+    {
+        config(['app.trusted_proxies' => '*']);
+        $r = $this->getJson('/api/sesion', ['X-Forwarded-Proto' => 'https', 'X-Forwarded-For' => '200.87.1.1']);
+        $r->assertHeader('Strict-Transport-Security');
+        \Illuminate\Http\Request::setTrustedProxies([], \Illuminate\Http\Request::HEADER_X_FORWARDED_FOR);   // limpiar (es global)
+    }
+
+    public function test_en_local_no_confia_en_cabeceras_de_proxy_falsificadas(): void
+    {
+        \Illuminate\Http\Request::setTrustedProxies([], \Illuminate\Http\Request::HEADER_X_FORWARDED_FOR);
+        config(['app.trusted_proxies' => '']);
+        $this->getJson('/api/sesion', ['X-Forwarded-Proto' => 'https'])->assertHeaderMissing('Strict-Transport-Security');
+    }
+
     public function test_todas_las_rutas_protegidas_piden_token(): void
     {
         $rutas = [
@@ -34,7 +49,7 @@ class SeguridadTest extends TestCase
             ['GET', '/api/registros/episodio/1'], ['PUT', '/api/registros/episodio/1'], ['DELETE', '/api/registros/episodio/1'],
             ['GET', '/api/recordatorios'], ['PUT', '/api/recordatorios'],
             ['GET', '/api/notificaciones'], ['POST', '/api/notificaciones'], ['PUT', '/api/notificaciones/1'],
-            ['GET', '/api/estadisticas'],
+            ['GET', '/api/estadisticas'], ['GET', '/api/prediccion'],
             ['GET', '/api/reportes'], ['POST', '/api/reportes'], ['GET', '/api/reportes/1'], ['DELETE', '/api/reportes/1'],
             ['PUT', '/api/cuenta'], ['PUT', '/api/cuenta/clave'], ['DELETE', '/api/cuenta'],
         ];
