@@ -3,10 +3,12 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CatalogoController;
 use App\Http\Controllers\CuentaController;
+use App\Http\Controllers\EstadisticaController;
 use App\Http\Controllers\NotificacionController;
 use App\Http\Controllers\PerfilController;
 use App\Http\Controllers\RecordatorioController;
 use App\Http\Controllers\RegistroController;
+use App\Http\Controllers\ReporteController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -45,6 +47,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/notificaciones', [NotificacionController::class, 'index']);
     Route::post('/notificaciones', [NotificacionController::class, 'crear']);
     Route::put('/notificaciones/{id}', [NotificacionController::class, 'marcar'])->whereNumber('id');
+
+    // Estadísticas del dashboard y reportes para consulta
+    Route::get('/estadisticas', [EstadisticaController::class, 'index']);
+    Route::get('/reportes', [ReporteController::class, 'index']);
+    Route::post('/reportes', [ReporteController::class, 'crear']);
+    Route::get('/reportes/{id}', [ReporteController::class, 'mostrar'])->whereNumber('id');
+    Route::delete('/reportes/{id}', [ReporteController::class, 'eliminar'])->whereNumber('id');
 
     // Cuenta
     Route::put('/cuenta', [CuentaController::class, 'actualizar']);
