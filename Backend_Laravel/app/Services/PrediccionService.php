@@ -4,6 +4,7 @@ namespace App\Services;
 
 use Carbon\Carbon;
 use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -135,9 +136,14 @@ class PrediccionService
     protected function llamar(string $ruta, ?array $cuerpo, string $metodo = 'post'): array
     {
         try {
+            // Render gratis "duerme" el ML: mientras despierta responde 502/503/504 o no conecta.
+            // Se reintenta solo esos casos, con pausas, hasta ~1 minuto en total.
+            $despertando = fn ($e) => $e instanceof ConnectionException
+                || ($e instanceof RequestException && in_array($e->response->status(), [502, 503, 504], true));
             $http = Http::withHeaders(['X-API-Key' => (string) config('services.ml.key')])
                 ->acceptJson()
-                ->timeout((int) config('services.ml.timeout'));
+                ->timeout((int) config('services.ml.timeout'))
+                ->retry((int) config('services.ml.reintentos', 6), (int) config('services.ml.pausa_ms', 10000), $despertando, false);
             $r = $metodo === 'get'
                 ? $http->get(config('services.ml.url').$ruta)
                 : $http->post(config('services.ml.url').$ruta, $cuerpo);

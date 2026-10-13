@@ -28,7 +28,9 @@ return [
     'ml' => [
         'url'     => rtrim((string) env('ML_URL', ''), '/'),
         'key'     => env('ML_API_KEY'),
-        'timeout' => (int) env('ML_TIMEOUT', 70),   // Render gratis "duerme": la 1.ª llamada tarda ~1 min
+        'timeout' => (int) env('ML_TIMEOUT', 20),   // por intento (el ML responde en <2 s cuando está despierto)
+        'reintentos' => (int) env('ML_REINTENTOS', 5),     // intentos si el ML está despertando (502/503/504)
+        'pausa_ms'   => (int) env('ML_PAUSA_MS', 10000),   // espera entre intentos
     ],
 
     'ses' => [

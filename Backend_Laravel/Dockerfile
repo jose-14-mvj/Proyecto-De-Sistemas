@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends git unzip libzi
 # Apache sirve solo la carpeta public/ (el código y el .env quedan fuera del alcance web)
 COPY docker/apache.conf /etc/apache2/sites-available/000-default.conf
 RUN sed -ri 's/ServerTokens OS/ServerTokens Prod/; s/ServerSignature On/ServerSignature Off/' /etc/apache2/conf-available/security.conf \
- && printf "expose_php = Off\nzend.exception_ignore_args = On\ndisplay_errors = Off\n" > /usr/local/etc/php/conf.d/seguridad.ini
+ && printf "expose_php = Off\nzend.exception_ignore_args = On\ndisplay_errors = Off\nmax_execution_time = 150\n" > /usr/local/etc/php/conf.d/seguridad.ini
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 WORKDIR /var/www/html

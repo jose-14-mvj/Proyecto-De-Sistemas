@@ -13,7 +13,8 @@ class PrediccionTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        config(['services.ml.url' => 'https://ml-prueba.example', 'services.ml.key' => 'clave-ml']);
+        config(['services.ml.url' => 'https://ml-prueba.example', 'services.ml.key' => 'clave-ml',
+                'services.ml.reintentos' => 3, 'services.ml.pausa_ms' => 0]);
     }
 
     private function respuestaMl(float $p = 0.82): array
@@ -66,6 +67,26 @@ class PrediccionTest extends TestCase
         $this->getJson('/api/prediccion', $this->conToken($t))->assertStatus(503)
              ->assertJsonPath('ok', false)
              ->assertJson(fn ($j) => $j->where('error', fn ($e) => str_contains($e, 'despertar'))->etc());
+    }
+
+    public function test_si_el_ml_esta_despertando_reintenta_solo(): void
+    {
+        Http::fake(['*' => Http::sequence()
+            ->push('Bad Gateway', 502)
+            ->push('Service Unavailable', 503)
+            ->push($this->respuestaMl(0.4))]);
+        [, $t] = $this->usuarioConToken();
+
+        $this->getJson('/api/prediccion', $this->conToken($t))->assertOk()->assertJsonPath('prediccion.probabilidad', 0.4);
+        Http::assertSentCount(3);
+    }
+
+    public function test_un_error_que_no_es_de_arranque_no_se_reintenta(): void
+    {
+        Http::fake(['*' => Http::response(['detail' => 'Clave inválida'], 401)]);
+        [, $t] = $this->usuarioConToken();
+        $this->getJson('/api/prediccion', $this->conToken($t))->assertStatus(503);
+        Http::assertSentCount(1);
     }
 
     public function test_si_el_ml_responde_error_devuelve_503(): void
