@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Laravel\Sanctum\HasApiTokens;
 
@@ -25,9 +27,41 @@ class Usuario extends Authenticatable
 
     protected $casts = [
         'activo'         => 'boolean',
+        'alerta_riesgo'  => 'boolean',
         'fecha_registro' => 'datetime',
         'ultimo_acceso'  => 'datetime',
     ];
+
+
+    public function perfil(): HasOne
+    {
+        return $this->hasOne(Perfil::class, 'id_usuario', 'id_usuario');
+    }
+
+    public function recordatorios(): HasMany
+    {
+        return $this->hasMany(Recordatorio::class, 'id_usuario', 'id_usuario');
+    }
+
+    public function notificaciones(): HasMany
+    {
+        return $this->hasMany(Notificacion::class, 'id_usuario', 'id_usuario');
+    }
+
+    public function registrosSintoma(): HasMany
+    {
+        return $this->hasMany(RegistroSintoma::class, 'id_usuario', 'id_usuario');
+    }
+
+    public function episodios(): HasMany
+    {
+        return $this->hasMany(EpisodioMigrana::class, 'id_usuario', 'id_usuario');
+    }
+
+    public function reportes(): HasMany
+    {
+        return $this->hasMany(Reporte::class, 'id_usuario', 'id_usuario');
+    }
 
     /** Laravel debe leer la contraseña de la columna `contrasena`. */
     public function getAuthPassword()
