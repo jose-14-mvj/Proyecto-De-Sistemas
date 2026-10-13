@@ -75,7 +75,8 @@ class RouteServiceProvider extends ServiceProvider
         });
 
         RateLimiter::for('api', function (Request $request) {
-            return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
+            // El token se resuelve aquí (el throttle corre antes que auth:sanctum); la PK es id_usuario, no id
+            return Limit::perMinute(60)->by(optional($request->user('sanctum'))->id_usuario ?: $request->ip());
         });
     }
 }

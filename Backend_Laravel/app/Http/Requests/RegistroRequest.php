@@ -25,7 +25,8 @@ class RegistroRequest extends FormRequest
     {
         return [
             'name'     => ['required', 'string', 'min:2', 'max:60', 'regex:/^[\pL ]+$/u'],
-            'email'    => ['required', 'string', 'email:rfc', 'max:60', 'unique:usuario,correo'],
+            // not_regex: sin saltos de línea (mitiga GHSA-5vg9-5847-vvmq, CRLF en la regla email de Laravel)
+            'email'    => ['required', 'string', 'not_regex:/[\r\n\x00]/', 'email:rfc', 'max:60', 'unique:usuario,correo'],
             // Mínimo 10, mayúscula, minúscula y número. Sin máximo bajo (el viejo tope de 25 se elimina).
             'password' => ['required', 'string', 'max:128', Password::min(10)->mixedCase()->numbers()],
         ];
@@ -37,6 +38,7 @@ class RegistroRequest extends FormRequest
             'name.regex'   => 'El nombre solo puede tener letras y espacios.',
             'email.unique' => 'El correo ya está registrado.',
             'email.email'  => 'El correo no es válido.',
+            'email.not_regex' => 'El correo no es válido.',
         ];
     }
 }

@@ -31,7 +31,7 @@ class ActualizarCuentaRequest extends FormRequest
 
         return [
             'name'  => ['required', 'string', 'min:2', 'max:60', 'regex:/^[\pL ]+$/u'],
-            'email' => ['sometimes', 'string', 'email:rfc', 'max:60',
+            'email' => ['sometimes', 'string', 'not_regex:/[\r\n\x00]/', 'email:rfc', 'max:60',
                         Rule::unique('usuario', 'correo')->ignore($usuario->id_usuario, 'id_usuario')],
             // Cambiar el correo exige confirmar con la contraseña actual
             'current_password' => [Rule::requiredIf($cambiaCorreo), 'string', 'max:128',

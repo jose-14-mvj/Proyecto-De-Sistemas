@@ -13,3 +13,5 @@ npm-debug.log
 yarn-error.log
 /.idea
 /.vscode
+# Certificado de Aiven y otros secretos
+/storage/certs/
