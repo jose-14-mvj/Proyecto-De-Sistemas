@@ -198,4 +198,63 @@ class RecuperacionClaveTest extends TestCase
         $usuario->delete();
         $this->assertSame(0, DB::table('recuperacion_clave')->count());
     }
+
+    public function test_con_apps_script_el_correo_sale_por_google_y_no_por_brevo(): void
+    {
+        config([
+            'services.correo.appsscript_url'     => 'https://script.google.com/macros/s/ABC/exec',
+            'services.correo.appsscript_secreto' => 'secreto-de-prueba',
+        ]);
+        Http::fake([
+            'script.google.com/*' => Http::response(['ok' => true], 200),
+            'api.brevo.com/*'     => Http::response([], 201),
+        ]);
+        $this->usuarioConToken('ana@test.com');
+
+        $this->pedir()->assertOk();
+
+        Http::assertSent(fn (PeticionHttp $r) => $r->url() === 'https://script.google.com/macros/s/ABC/exec'
+            && $r['para'] === 'ana@test.com'
+            && $r['secreto'] === 'secreto-de-prueba'
+            && preg_match('/Tu código es: \d{6}/u', $r['texto']) === 1);
+        Http::assertNotSent(fn (PeticionHttp $r) => str_contains($r->url(), 'brevo.com'));
+
+        // El código que llegó por Apps Script sirve para cambiar la clave
+        $codigo = null;
+        Http::assertSent(function (PeticionHttp $r) use (&$codigo) {
+            if (preg_match('/Tu código es: (\d{6})/u', (string) ($r['texto'] ?? ''), $m)) {
+                $codigo = $m[1];
+            }
+            return true;
+        });
+        $this->postJson('/api/clave/restablecer', [
+            'email' => 'ana@test.com', 'codigo' => $codigo,
+            'password' => 'OtraClave2026', 'password_confirmation' => 'OtraClave2026',
+        ])->assertOk();
+    }
+
+    public function test_si_apps_script_falla_la_respuesta_es_la_misma(): void
+    {
+        config([
+            'services.correo.appsscript_url'     => 'https://script.google.com/macros/s/ABC/exec',
+            'services.correo.appsscript_secreto' => 'secreto-de-prueba',
+        ]);
+        Http::fake(['script.google.com/*' => Http::response(['ok' => false, 'error' => 'secreto incorrecto'], 200)]);
+        $this->usuarioConToken('ana@test.com');
+
+        $this->pedir()->assertOk()->assertJsonPath('ok', true);
+    }
+
+    public function test_solo_apps_script_sin_brevo_tambien_cuenta_como_configurado(): void
+    {
+        config([
+            'services.correo.brevo_key'          => '',
+            'services.correo.appsscript_url'     => 'https://script.google.com/macros/s/ABC/exec',
+            'services.correo.appsscript_secreto' => 'secreto-de-prueba',
+        ]);
+        Http::fake(['script.google.com/*' => Http::response(['ok' => true], 200)]);
+        $this->usuarioConToken('ana@test.com');
+
+        $this->pedir()->assertOk();
+    }
 }

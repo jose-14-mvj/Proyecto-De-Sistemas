@@ -38,8 +38,11 @@ return [
         'simulados'         => (int) env('ML_SIMULADOS', 200),              // base de estudios que se mezcla
     ],
 
-    // Correos (recuperar contraseña) por la API HTTPS de Brevo: Render gratis bloquea SMTP
+    // Correos (recuperar contraseña) por HTTPS: Render gratis bloquea SMTP.
+    // Si hay Apps Script se usa ese (sale desde Gmail de verdad); si no, Brevo.
     'correo' => [
+        'appsscript_url'     => env('CORREO_APPSSCRIPT_URL', ''),
+        'appsscript_secreto' => env('CORREO_APPSSCRIPT_SECRETO', ''),
         'brevo_key'         => env('BREVO_API_KEY', ''),
         'remitente'         => env('CORREO_REMITENTE', ''),
         'remitente_nombre'  => env('CORREO_REMITENTE_NOMBRE', 'MigraSense'),

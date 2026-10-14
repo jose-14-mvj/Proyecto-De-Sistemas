@@ -7,17 +7,23 @@ use Illuminate\Support\Facades\Log;
 use RuntimeException;
 
 /**
- * Envío de correos con la API HTTPS de Brevo (antes Sendinblue).
+ * Envío de correos por HTTPS (Render gratis bloquea los puertos SMTP 25/465/587).
  *
- * Por qué HTTPS y no SMTP: Render (plan gratis) bloquea los puertos SMTP 25/465/587,
- * así que Gmail/SMTP no funcionan ahí. La API de Brevo va por el puerto 443.
+ * Dos formas (se usa la primera que esté configurada):
  *
- * Variables de entorno (.env / Render):
- *   BREVO_API_KEY           clave de API de Brevo (xkeysib-...)
- *   CORREO_REMITENTE        correo verificado en Brevo como remitente
- *   CORREO_REMITENTE_NOMBRE nombre que ve la persona (por defecto "MigraSense")
+ * 1) Google Apps Script (RECOMENDADO si el remitente es un @gmail.com)
+ *    El correo sale DE VERDAD desde la cuenta de Gmail del equipo, así que Gmail lo acepta.
+ *    (Con Brevo + remitente @gmail.com, Gmail rechaza los correos: falla DMARC.)
+ *      CORREO_APPSSCRIPT_URL      URL de la "aplicación web" del script (https://script.google.com/macros/s/.../exec)
+ *      CORREO_APPSSCRIPT_SECRETO  la misma clave secreta guardada en las propiedades del script
+ *    Límite de Google: ~100 destinatarios por día (cuenta gratis).
  *
- * Sin BREVO_API_KEY y con APP_ENV=local, el correo NO se envía: se escribe en
+ * 2) API de Brevo (para cuando tengan un dominio propio autenticado en Brevo)
+ *      BREVO_API_KEY, CORREO_REMITENTE
+ *
+ * CORREO_REMITENTE_NOMBRE: nombre que ve la persona (por defecto "MigraSense").
+ *
+ * Sin ninguna configurada y con APP_ENV=local, el correo NO se envía: se escribe en
  * storage/logs/laravel.log para poder probar en la PC (nunca en producción).
  */
 class CorreoService
@@ -32,23 +38,73 @@ class CorreoService
 
     public function configurado(): bool
     {
+        return $this->usaAppsScript() || $this->usaBrevo();
+    }
+
+    private function usaAppsScript(): bool
+    {
+        return (string) config('services.correo.appsscript_url') !== ''
+            && (string) config('services.correo.appsscript_secreto') !== '';
+    }
+
+    private function usaBrevo(): bool
+    {
         return (string) config('services.correo.brevo_key') !== ''
             && (string) config('services.correo.remitente') !== '';
     }
 
     /**
-     * Envía un correo. Lanza RuntimeException si Brevo lo rechaza o no responde.
+     * Envía un correo. Lanza RuntimeException si el proveedor lo rechaza o no responde.
      */
     public function enviar(string $para, string $nombre, string $asunto, string $html, string $texto): void
     {
-        if (! $this->configurado()) {
-            if (app()->environment('local')) {
-                Log::info("[CORREO SIMULADO · solo local] Para: {$para}\nAsunto: {$asunto}\n\n{$texto}");
-                return;
-            }
-            throw new RuntimeException('El envío de correos no está configurado (BREVO_API_KEY / CORREO_REMITENTE).');
+        if ($this->usaAppsScript()) {
+            $this->enviarAppsScript($para, $asunto, $html, $texto);
+            return;
+        }
+        if ($this->usaBrevo()) {
+            $this->enviarBrevo($para, $nombre, $asunto, $html, $texto);
+            return;
+        }
+        if (app()->environment('local')) {
+            Log::info("[CORREO SIMULADO · solo local] Para: {$para}\nAsunto: {$asunto}\n\n{$texto}");
+            return;
+        }
+        throw new RuntimeException('El envío de correos no está configurado (CORREO_APPSSCRIPT_URL o BREVO_API_KEY).');
+    }
+
+    private function enviarAppsScript(string $para, string $asunto, string $html, string $texto): void
+    {
+        $url = (string) config('services.correo.appsscript_url');
+        if (! str_starts_with($url, 'https://script.google.com/')) {
+            throw new RuntimeException('CORREO_APPSSCRIPT_URL debe empezar con https://script.google.com/');
         }
 
+        try {
+            // Google responde con una redirección (302) a script.googleusercontent.com: se sigue sola
+            $r = Http::acceptJson()
+                ->timeout(25)
+                ->post($url, [
+                    'secreto' => (string) config('services.correo.appsscript_secreto'),
+                    'para'    => $para,
+                    'nombre'  => (string) config('services.correo.remitente_nombre', 'MigraSense'),
+                    'asunto'  => $asunto,
+                    'html'    => $html,
+                    'texto'   => $texto,
+                ]);
+        } catch (\Throwable $e) {
+            throw new RuntimeException('Apps Script no respondió: '.class_basename($e));
+        }
+
+        if (! $r->successful() || $r->json('ok') !== true) {
+            // Nunca el contenido del correo (lleva el código)
+            $motivo = mb_substr((string) ($r->json('error') ?? 'respuesta inesperada'), 0, 200);
+            throw new RuntimeException("Apps Script no envió el correo (HTTP {$r->status()}): {$motivo}");
+        }
+    }
+
+    private function enviarBrevo(string $para, string $nombre, string $asunto, string $html, string $texto): void
+    {
         try {
             $r = Http::withHeaders(['api-key' => (string) config('services.correo.brevo_key')])
                 ->acceptJson()
@@ -68,7 +124,6 @@ class CorreoService
         }
 
         if (! $r->successful()) {
-            // Solo el código y el mensaje de Brevo (nunca el contenido del correo: lleva el código)
             $motivo = mb_substr((string) ($r->json('code') ?? '').' '.($r->json('message') ?? ''), 0, 200);
             throw new RuntimeException("Brevo rechazó el correo (HTTP {$r->status()}): {$motivo}");
         }
