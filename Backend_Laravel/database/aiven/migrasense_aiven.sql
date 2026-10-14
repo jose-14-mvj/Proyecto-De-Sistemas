@@ -247,6 +247,28 @@ CREATE TABLE notificacion (
 ) ENGINE=InnoDB;
 
 -- ---------------------------------------------------------------------
+-- MODELO_ML · memoria del aprendizaje del modelo de machine learning
+-- ---------------------------------------------------------------------
+CREATE TABLE modelo_ml (
+  id_modelo        BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  version          VARCHAR(40)     NULL,
+  estado           VARCHAR(15)     NOT NULL DEFAULT 'en_curso',
+  auc              DECIMAL(5,3)    NULL,
+  auc_anterior     DECIMAL(5,3)    NULL,
+  pacientes_reales INT UNSIGNED    NULL,
+  filas_reales     INT UNSIGNED    NULL,
+  registros_usados INT UNSIGNED    NOT NULL DEFAULT 0,
+  motivo           VARCHAR(255)    NULL,
+  sha256           CHAR(64)        NULL,
+  tamano_bytes     INT UNSIGNED    NULL,
+  archivo          LONGTEXT        NULL,
+  fecha_inicio     DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  fecha_fin        DATETIME        NULL,
+  PRIMARY KEY (id_modelo),
+  KEY idx_modelo_ml_estado (estado, id_modelo)
+) ENGINE=InnoDB;
+
+-- ---------------------------------------------------------------------
 -- REPORTE · resume (con registros) y abarca (con episodios)
 -- ---------------------------------------------------------------------
 CREATE TABLE reporte (

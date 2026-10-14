@@ -288,3 +288,21 @@ INSERT INTO sintoma_prodromico (codigo, nombre_sintoma, activo) VALUES
 INSERT INTO desencadenante (codigo, nombre, activo) VALUES
  ('estres', 'Estrés', 1),
  ('sueno', 'Falta de sueño', 1);
+
+-- Memoria del aprendizaje del ML (ver migración 2026_10_14_000001_create_modelo_ml_table)
+CREATE TABLE modelo_ml (
+  id_modelo INTEGER PRIMARY KEY AUTOINCREMENT,
+  version VARCHAR(40) NULL,
+  estado VARCHAR(15) NOT NULL DEFAULT 'en_curso',
+  auc DECIMAL(5,3) NULL,
+  auc_anterior DECIMAL(5,3) NULL,
+  pacientes_reales INTEGER NULL,
+  filas_reales INTEGER NULL,
+  registros_usados INTEGER NOT NULL DEFAULT 0,
+  motivo VARCHAR(255) NULL,
+  sha256 CHAR(64) NULL,
+  tamano_bytes INTEGER NULL,
+  archivo TEXT NULL,
+  fecha_inicio DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  fecha_fin DATETIME NULL
+);
