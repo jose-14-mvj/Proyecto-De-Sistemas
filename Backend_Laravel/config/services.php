@@ -38,6 +38,15 @@ return [
         'simulados'         => (int) env('ML_SIMULADOS', 200),              // base de estudios que se mezcla
     ],
 
+    // Correos (recuperar contraseña) por la API HTTPS de Brevo: Render gratis bloquea SMTP
+    'correo' => [
+        'brevo_key'         => env('BREVO_API_KEY', ''),
+        'remitente'         => env('CORREO_REMITENTE', ''),
+        'remitente_nombre'  => env('CORREO_REMITENTE_NOMBRE', 'MigraSense'),
+        'frontend_url'      => rtrim((string) env('FRONTEND_URL', 'https://miguelhuanca676-bot.github.io/migrasense'), '/'),
+        'respuesta_min_ms'  => (int) env('CORREO_RESPUESTA_MIN_MS', 1500),
+    ],
+
     'ses' => [
         'key' => env('AWS_ACCESS_KEY_ID'),
         'secret' => env('AWS_SECRET_ACCESS_KEY'),

@@ -269,6 +269,23 @@ CREATE TABLE modelo_ml (
 ) ENGINE=InnoDB;
 
 -- ---------------------------------------------------------------------
+-- RECUPERACION_CLAVE · códigos de "¿Olvidaste tu contraseña?" (solo la huella HMAC)
+-- ---------------------------------------------------------------------
+CREATE TABLE recuperacion_clave (
+  id_recuperacion BIGINT UNSIGNED  NOT NULL AUTO_INCREMENT,
+  id_usuario      INT UNSIGNED     NOT NULL,
+  codigo_hash     CHAR(64)         NOT NULL,
+  intentos        TINYINT UNSIGNED NOT NULL DEFAULT 0,
+  fecha_creacion  DATETIME         NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  fecha_expira    DATETIME         NOT NULL,
+  fecha_uso       DATETIME         NULL,
+  ip              VARCHAR(45)      NULL,
+  PRIMARY KEY (id_recuperacion),
+  KEY idx_recuperacion_usuario (id_usuario, id_recuperacion),
+  CONSTRAINT fk_recuperacion_usuario FOREIGN KEY (id_usuario) REFERENCES usuario (id_usuario) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- ---------------------------------------------------------------------
 -- REPORTE · resume (con registros) y abarca (con episodios)
 -- ---------------------------------------------------------------------
 CREATE TABLE reporte (

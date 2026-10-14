@@ -7,6 +7,7 @@ use App\Http\Controllers\EstadisticaController;
 use App\Http\Controllers\NotificacionController;
 use App\Http\Controllers\PerfilController;
 use App\Http\Controllers\PrediccionController;
+use App\Http\Controllers\RecuperacionClaveController;
 use App\Http\Controllers\RecordatorioController;
 use App\Http\Controllers\RegistroController;
 use App\Http\Controllers\ReporteController;
@@ -19,6 +20,10 @@ use Illuminate\Support\Facades\Route;
 // Públicas (con límite de intentos, ver RouteServiceProvider)
 Route::post('/registro', [AuthController::class, 'registro'])->middleware('throttle:registro');
 Route::post('/login',    [AuthController::class, 'login'])->middleware('throttle:login');
+
+// ¿Olvidaste tu contraseña? (código de 6 dígitos por correo)
+Route::post('/clave/olvide',      [RecuperacionClaveController::class, 'olvide'])->middleware('throttle:recuperar');
+Route::post('/clave/restablecer', [RecuperacionClaveController::class, 'restablecer'])->middleware('throttle:restablecer');
 
 // Protegidas: requieren "Authorization: Bearer <token>"
 Route::middleware('auth:sanctum')->group(function () {

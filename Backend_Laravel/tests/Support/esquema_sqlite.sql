@@ -306,3 +306,15 @@ CREATE TABLE modelo_ml (
   fecha_inicio DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   fecha_fin DATETIME NULL
 );
+
+-- Códigos de recuperación de contraseña (ver migración 2026_10_15_000001_create_recuperacion_clave_table)
+CREATE TABLE recuperacion_clave (
+  id_recuperacion INTEGER PRIMARY KEY AUTOINCREMENT,
+  id_usuario INTEGER NOT NULL REFERENCES usuario(id_usuario) ON DELETE CASCADE,
+  codigo_hash CHAR(64) NOT NULL,
+  intentos INTEGER NOT NULL DEFAULT 0,
+  fecha_creacion DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  fecha_expira DATETIME NOT NULL,
+  fecha_uso DATETIME NULL,
+  ip VARCHAR(45) NULL
+);

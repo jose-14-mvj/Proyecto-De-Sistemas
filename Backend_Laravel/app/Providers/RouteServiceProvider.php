@@ -69,6 +69,22 @@ class RouteServiceProvider extends ServiceProvider
             return Limit::perHour(10)->by($request->ip());
         });
 
+        // Pedir código de recuperación: 3 cada 15 min por (correo + IP) y 10 por hora por IP
+        RateLimiter::for('recuperar', function (Request $request) {
+            return [
+                Limit::perMinutes(15, 3)->by('rec|'.strtolower((string) $request->input('email')).'|'.$request->ip()),
+                Limit::perHour(10)->by('rec|'.$request->ip()),
+            ];
+        });
+
+        // Probar el código: 10 cada 15 min por correo y 20 por IP (el código además se anula a los 5 fallos)
+        RateLimiter::for('restablecer', function (Request $request) {
+            return [
+                Limit::perMinutes(15, 10)->by('res|'.strtolower((string) $request->input('email'))),
+                Limit::perMinutes(15, 20)->by('res|'.$request->ip()),
+            ];
+        });
+
         // Acciones delicadas (cambiar clave, borrar cuenta): 5 por minuto por usuario
         RateLimiter::for('sensibles', function (Request $request) {
             return Limit::perMinute(5)->by($request->user()?->id_usuario ?: $request->ip());
