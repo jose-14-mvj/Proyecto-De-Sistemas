@@ -356,7 +356,8 @@ INSERT INTO sintoma_prodromico (codigo, nombre_sintoma, descripcion) VALUES
  ('vision','Destellos o visión borrosa (aura)','Alteraciones visuales previas al dolor'),
  ('sed','Sed excesiva','Sed inusual'),
  ('retencion','Retención de líquidos','Hinchazón o sensación de retención'),
- ('bostezos','Bostezos excesivos','Bostezos repetidos sin sueño');
+ ('bostezos','Bostezos excesivos','Bostezos repetidos sin sueño'),
+ ('auras','Auras','Alteraciones visuales o sensitivas pasajeras (destellos, puntos ciegos, líneas en zigzag, hormigueo) que suelen durar de 5 a 60 minutos, antes o durante el dolor.');
 
 INSERT INTO desencadenante (codigo, nombre) VALUES
  ('estres','Estrés'),

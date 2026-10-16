@@ -53,7 +53,7 @@ class CatalogosSeeder extends Seeder
         }
         DB::table('desencadenante')->upsert($filas, ['id_desencadenante'], ['codigo', 'nombre', 'activo']);
 
-        // Los 16 síntomas que usa el frontend (idéntico a database/08_catalogo_sintomas.sql).
+        // Los 16 síntomas que usa el frontend + Auras (idéntico a database/08_catalogo_sintomas.sql).
         $sint = [
             ['hiperactividad', 'Hiperactividad', 'Energía inusualmente alta o inquietud: sientes necesidad de moverte o hacer muchas cosas, más de lo normal en ti.'],
             ['hipoactividad', 'Hipoactividad', 'Lentitud o ganas de no moverte: te cuesta arrancar y prefieres quedarte quieto/a más de lo habitual.'],
@@ -71,6 +71,8 @@ class CatalogosSeeder extends Seeder
             ['nauseas', 'Náuseas', 'Malestar en el estómago o ganas de vomitar, con o sin vómito.'],
             ['vision', 'Visión borrosa', 'Ves las cosas poco nítidas, con destellos o manchas (puede ser un aviso de aura).'],
             ['bostezos_palidez', 'Bostezos o palidez', 'Bostezos acompañados de una piel más pálida de lo normal en el rostro.'],
+            // Se ofrece en el formulario de episodio (migración 2026_10_16_000002)
+            ['auras', 'Auras', 'Alteraciones visuales o sensitivas pasajeras (destellos, puntos ciegos, líneas en zigzag, hormigueo) que suelen durar de 5 a 60 minutos, antes o durante el dolor.'],
         ];
         $filas = array_map(fn ($s) => ['codigo' => $s[0], 'nombre_sintoma' => $s[1], 'descripcion' => $s[2], 'activo' => 1], $sint);
         DB::table('sintoma_prodromico')->upsert($filas, ['codigo'], ['nombre_sintoma', 'descripcion', 'activo']);

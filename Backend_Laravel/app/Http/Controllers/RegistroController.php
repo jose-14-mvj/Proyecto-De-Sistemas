@@ -68,7 +68,10 @@ class RegistroController extends Controller
         }
 
         try {
-            $this->registros->editar($uid, $tipo, $id, $request->validated());
+            $request->esCompleta()
+                ? $this->registros->editarCompleto($uid, $tipo, $id, $request->validated(),
+                    $request->filled('inicio') ? $request->inicioCarbon() : null)
+                : $this->registros->editar($uid, $tipo, $id, $request->validated());
         } catch (QueryException $e) {
             return $this->errorDeSp($e);
         }

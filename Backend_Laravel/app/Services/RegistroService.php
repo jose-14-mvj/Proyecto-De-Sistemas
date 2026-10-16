@@ -86,6 +86,87 @@ class RegistroService
         ]);
     }
 
+    /**
+     * Edición completa (desde el formulario de registro). Solo cambia lo que viene en $d;
+     * todo en una transacción y siempre filtrando por el dueño del registro.
+     * Los códigos ya fueron validados contra el catálogo activo (EditarRegistroRequest).
+     */
+    public function editarCompleto(int $idUsuario, string $tipo, int $id, array $d, ?Carbon $inicio): void
+    {
+        DB::transaction(function () use ($idUsuario, $tipo, $id, $d, $inicio) {
+            $notas = array_key_exists('notas', $d) ? (trim((string) $d['notas']) === '' ? null : trim((string) $d['notas'])) : false;
+
+            if ($tipo === 'prodromico') {
+                $cambios = ['intensidad' => $d['intensidad']];
+                if ($notas !== false) {
+                    $cambios['observacion'] = $notas;
+                }
+                if ($inicio) {
+                    $cambios['fecha'] = $inicio->toDateString();
+                    $cambios['hora'] = $inicio->format('H:i:s');
+                }
+                if (! DB::table('registro_sintoma')->where('id_registro', $id)->where('id_usuario', $idUsuario)->exists()) {
+                    throw new \RuntimeException('Registro no encontrado');
+                }
+                DB::table('registro_sintoma')->where('id_registro', $id)->where('id_usuario', $idUsuario)->update($cambios);
+                if (array_key_exists('sintomas', $d)) {
+                    DB::table('detalle_registro_sintoma')->where('id_registro', $id)->delete();
+                    foreach ($this->idsCatalogo('sintoma_prodromico', 'id_sintoma', $d['sintomas'] ?? []) as $s) {
+                        DB::table('detalle_registro_sintoma')->insert(['id_registro' => $id, 'id_sintoma' => $s]);
+                    }
+                }
+                return;
+            }
+
+            // episodio
+            if (! DB::table('episodio_migrana')->where('id_episodio', $id)->where('id_usuario', $idUsuario)->exists()) {
+                throw new \RuntimeException('Registro no encontrado');
+            }
+            $cambios = ['nivel_dolor' => $d['intensidad']];
+            if ($notas !== false) {
+                $cambios['notas'] = $notas;
+            }
+            if (! empty($d['duracion'])) {
+                $cambios['duracion'] = $d['duracion'];
+            }
+            if ($inicio) {
+                $cambios['fecha_inicio'] = $inicio->toDateString();
+                $cambios['hora_inicio'] = $inicio->format('H:i:s');
+            }
+            DB::table('episodio_migrana')->where('id_episodio', $id)->where('id_usuario', $idUsuario)->update($cambios);
+
+            // Medicación: "medicacion" manda; si no viene, se usa el criterio de siempre (medicamento vacío = no tomó)
+            $medicamento = trim((string) ($d['medicamento'] ?? ''));
+            $tomo = array_key_exists('medicacion', $d) ? (bool) $d['medicacion'] : (array_key_exists('medicamento', $d) ? $medicamento !== '' : null);
+            if ($tomo !== null) {
+                DB::table('episodio_medicacion')->where('id_episodio', $id)->delete();
+                if ($tomo) {
+                    DB::table('episodio_medicacion')->insert(['id_episodio' => $id, 'medicamento' => $medicamento === '' ? null : $medicamento]);
+                }
+            }
+
+            if (array_key_exists('sintomas', $d)) {
+                DB::table('episodio_sintoma')->where('id_episodio', $id)->delete();
+                foreach ($this->idsCatalogo('sintoma_prodromico', 'id_sintoma', $d['sintomas'] ?? []) as $s) {
+                    DB::table('episodio_sintoma')->insert(['id_episodio' => $id, 'id_sintoma' => $s]);
+                }
+            }
+            if (array_key_exists('disparadores', $d)) {
+                DB::table('episodio_desencadenante')->where('id_episodio', $id)->delete();
+                foreach ($this->idsCatalogo('desencadenante', 'id_desencadenante', $d['disparadores'] ?? []) as $x) {
+                    DB::table('episodio_desencadenante')->insert(['id_episodio' => $id, 'id_desencadenante' => $x]);
+                }
+            }
+        });
+    }
+
+    /** ids del catálogo activo para una lista de códigos */
+    private function idsCatalogo(string $tabla, string $pk, array $codigos): array
+    {
+        $codigos = array_values(array_unique(array_filter($codigos, 'is_string')));
+        return $codigos ? DB::table($tabla)->whereIn('codigo', $codigos)->where('activo', 1)->pluck($pk)->all() : [];
+    }
+
     public function eliminar(int $idUsuario, string $tipo, int $id): void
     {
         DB::statement('CALL sp_eliminar_registro(?,?,?)', [$idUsuario, $tipo, $id]);
