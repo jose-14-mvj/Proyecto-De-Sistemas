@@ -320,3 +320,25 @@ CREATE TABLE recuperacion_clave (
   fecha_uso DATETIME NULL,
   ip VARCHAR(45) NULL
 );
+
+-- Recordatorios con push (ver migración 2026_10_17_000001_create_tablas_recordatorios_push)
+CREATE TABLE suscripcion_push (
+  id_suscripcion INTEGER PRIMARY KEY AUTOINCREMENT,
+  id_usuario INTEGER NOT NULL REFERENCES usuario (id_usuario) ON DELETE CASCADE,
+  endpoint_hash CHAR(64) NOT NULL UNIQUE,
+  endpoint TEXT NOT NULL,
+  p256dh VARCHAR(120) NOT NULL,
+  auth VARCHAR(40) NOT NULL,
+  agente VARCHAR(160) NULL,
+  fecha_creacion DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  ultimo_envio DATETIME NULL
+);
+CREATE TABLE envio_recordatorio (
+  id_envio INTEGER PRIMARY KEY AUTOINCREMENT,
+  id_usuario INTEGER NOT NULL REFERENCES usuario (id_usuario) ON DELETE CASCADE,
+  tipo VARCHAR(10) NOT NULL,
+  clave VARCHAR(12) NOT NULL,
+  resultado VARCHAR(255) NULL,
+  fecha_envio DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE (id_usuario, tipo, clave)
+);

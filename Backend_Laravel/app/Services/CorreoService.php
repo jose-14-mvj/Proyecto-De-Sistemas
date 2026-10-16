@@ -41,6 +41,15 @@ class CorreoService
         return $this->usaAppsScript() || $this->usaBrevo();
     }
 
+    /** Proveedores configurados, en el orden en que se usan (para diagnóstico; sin claves) */
+    public function proveedores(): array
+    {
+        return array_values(array_filter([
+            $this->usaAppsScript() ? 'Google Apps Script (Gmail)' : null,
+            $this->usaBrevo() ? 'Brevo' : null,
+        ]));
+    }
+
     private function usaAppsScript(): bool
     {
         return (string) config('services.correo.appsscript_url') !== ''
@@ -56,24 +65,36 @@ class CorreoService
     /**
      * Envía un correo. Lanza RuntimeException si el proveedor lo rechaza o no responde.
      */
-    public function enviar(string $para, string $nombre, string $asunto, string $html, string $texto): void
+    /**
+     * $adjuntos = [['nombre' => 'resumen.pdf', 'tipo' => 'application/pdf', 'contenido' => bytes], …]
+     */
+    public function enviar(string $para, string $nombre, string $asunto, string $html, string $texto, array $adjuntos = []): void
     {
         if ($this->usaAppsScript()) {
-            $this->enviarAppsScript($para, $asunto, $html, $texto);
-            return;
+            try {
+                $this->enviarAppsScript($para, $asunto, $html, $texto, $adjuntos);
+                return;
+            } catch (RuntimeException $e) {
+                // Si Google falla (cupo diario agotado, script caído…) y hay Brevo, se intenta por Brevo
+                if (! $this->usaBrevo()) {
+                    throw $e;
+                }
+                Log::warning('Correo: Apps Script falló, se intenta con Brevo. '.$e->getMessage());
+            }
         }
         if ($this->usaBrevo()) {
-            $this->enviarBrevo($para, $nombre, $asunto, $html, $texto);
+            $this->enviarBrevo($para, $nombre, $asunto, $html, $texto, $adjuntos);
             return;
         }
         if (app()->environment('local')) {
-            Log::info("[CORREO SIMULADO · solo local] Para: {$para}\nAsunto: {$asunto}\n\n{$texto}");
+            Log::info("[CORREO SIMULADO · solo local] Para: {$para}\nAsunto: {$asunto}\n\n{$texto}"
+                .($adjuntos ? "\n\nAdjuntos: ".implode(', ', array_column($adjuntos, 'nombre')) : ''));
             return;
         }
         throw new RuntimeException('El envío de correos no está configurado (CORREO_APPSSCRIPT_URL o BREVO_API_KEY).');
     }
 
-    private function enviarAppsScript(string $para, string $asunto, string $html, string $texto): void
+    private function enviarAppsScript(string $para, string $asunto, string $html, string $texto, array $adjuntos = []): void
     {
         $url = (string) config('services.correo.appsscript_url');
         if (! str_starts_with($url, 'https://script.google.com/')) {
@@ -91,6 +112,7 @@ class CorreoService
                     'asunto'  => $asunto,
                     'html'    => $html,
                     'texto'   => $texto,
+                    'adjuntos' => array_map(fn ($a) => ['nombre' => $a['nombre'], 'tipo' => $a['tipo'], 'base64' => base64_encode($a['contenido'])], $adjuntos),
                 ]);
         } catch (\Throwable $e) {
             throw new RuntimeException('Apps Script no respondió: '.class_basename($e));
@@ -103,7 +125,7 @@ class CorreoService
         }
     }
 
-    private function enviarBrevo(string $para, string $nombre, string $asunto, string $html, string $texto): void
+    private function enviarBrevo(string $para, string $nombre, string $asunto, string $html, string $texto, array $adjuntos = []): void
     {
         try {
             $r = Http::withHeaders(['api-key' => (string) config('services.correo.brevo_key')])
@@ -118,7 +140,7 @@ class CorreoService
                     'subject'     => $asunto,
                     'htmlContent' => $html,
                     'textContent' => $texto,
-                ]);
+                ] + ($adjuntos ? ['attachment' => array_map(fn ($x) => ['name' => $x['nombre'], 'content' => base64_encode($x['contenido'])], $adjuntos)] : []));
         } catch (\Throwable $e) {
             throw new RuntimeException('Brevo no respondió: '.class_basename($e));
         }

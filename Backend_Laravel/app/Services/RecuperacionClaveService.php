@@ -43,10 +43,12 @@ class RecuperacionClaveService
             ->get(['fecha_creacion']);
 
         if ($ultimos->count() >= self::MAX_CODIGOS_DIA) {
+            Log::info('Recuperación de clave: el usuario '.$usuario->id_usuario.' ya pidió '.self::MAX_CODIGOS_DIA.' códigos en 24 h; no se envía otro.');
             return;
         }
         if ($ultimos->isNotEmpty()
             && now()->diffInSeconds(\Carbon\Carbon::parse($ultimos->first()->fecha_creacion), true) < self::SEGUNDOS_ENTRE_CODIGOS) {
+            Log::info('Recuperación de clave: el usuario '.$usuario->id_usuario.' pidió otro código antes de 1 minuto; no se envía.');
             return;   // el anterior acaba de salir: evita llenar la bandeja de la persona
         }
 
@@ -72,6 +74,7 @@ class RecuperacionClaveService
         try {
             [$asunto, $html, $texto] = $this->mensaje($usuario->nombres, $codigo);
             $this->correo->enviar($usuario->correo, (string) $usuario->nombres, $asunto, $html, $texto);
+            Log::info('Recuperación de clave: código enviado al usuario '.$usuario->id_usuario.'.');
         } catch (\Throwable $e) {
             // Nunca se registra el código ni el correo completo
             Log::warning('Recuperación de clave: no se pudo enviar el correo al usuario '.$usuario->id_usuario.'. '.$e->getMessage());

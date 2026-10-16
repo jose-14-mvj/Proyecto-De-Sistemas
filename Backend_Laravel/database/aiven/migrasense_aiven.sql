@@ -287,6 +287,39 @@ CREATE TABLE recuperacion_clave (
 ) ENGINE=InnoDB;
 
 -- ---------------------------------------------------------------------
+-- SUSCRIPCION_PUSH · navegadores que aceptaron recibir avisos (Web Push)
+-- ENVIO_RECORDATORIO · qué aviso se envió a quién (evita repetirlo)
+-- (ver migración 2026_10_17_000001_create_tablas_recordatorios_push)
+-- ---------------------------------------------------------------------
+CREATE TABLE suscripcion_push (
+  id_suscripcion BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  id_usuario     INT UNSIGNED    NOT NULL,
+  endpoint_hash  CHAR(64)        NOT NULL,
+  endpoint       TEXT            NOT NULL,
+  p256dh         VARCHAR(120)    NOT NULL,
+  auth           VARCHAR(40)     NOT NULL,
+  agente         VARCHAR(160)    NULL,
+  fecha_creacion DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  ultimo_envio   DATETIME        NULL,
+  PRIMARY KEY (id_suscripcion),
+  CONSTRAINT suscripcion_push_endpoint_hash_unique UNIQUE (endpoint_hash),
+  KEY idx_push_usuario (id_usuario),
+  CONSTRAINT fk_push_usuario FOREIGN KEY (id_usuario) REFERENCES usuario (id_usuario) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+CREATE TABLE envio_recordatorio (
+  id_envio    BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  id_usuario  INT UNSIGNED    NOT NULL,
+  tipo        VARCHAR(10)     NOT NULL,
+  clave       VARCHAR(12)     NOT NULL,
+  resultado   VARCHAR(255)    NULL,
+  fecha_envio DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id_envio),
+  CONSTRAINT uq_envio_usuario_tipo_clave UNIQUE (id_usuario, tipo, clave),
+  CONSTRAINT fk_envio_usuario FOREIGN KEY (id_usuario) REFERENCES usuario (id_usuario) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- ---------------------------------------------------------------------
 -- REPORTE · resume (con registros) y abarca (con episodios)
 -- ---------------------------------------------------------------------
 CREATE TABLE reporte (

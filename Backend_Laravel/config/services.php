@@ -40,6 +40,19 @@ return [
 
     // Correos (recuperar contraseña) por HTTPS: Render gratis bloquea SMTP.
     // Si hay Apps Script se usa ese (sale desde Gmail de verdad); si no, Brevo.
+    // Notificaciones Web Push (claves VAPID: php artisan migrasense:claves-push)
+    'push' => [
+        'publica' => (string) env('VAPID_PUBLIC_KEY', ''),
+        'privada' => (string) env('VAPID_PRIVATE_KEY', ''),
+        'sujeto'  => (string) env('VAPID_SUBJECT', 'mailto:migrasense@example.com'),
+    ],
+
+    // Despertador externo (cron-job.org) que llama a POST /api/tareas/recordatorios
+    'cron' => [
+        'clave'          => (string) env('CRON_CLAVE', ''),
+        'ventana_horas'  => (int) env('RECORDATORIO_VENTANA_HORAS', 3),   // si el aviso se atrasa, hasta cuánto después aún se envía
+    ],
+
     'correo' => [
         'appsscript_url'     => env('CORREO_APPSSCRIPT_URL', ''),
         'appsscript_secreto' => env('CORREO_APPSSCRIPT_SECRETO', ''),

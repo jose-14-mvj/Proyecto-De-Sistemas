@@ -257,4 +257,40 @@ class RecuperacionClaveTest extends TestCase
 
         $this->pedir()->assertOk();
     }
+
+    public function test_si_apps_script_falla_y_hay_brevo_el_codigo_sale_por_brevo(): void
+    {
+        config([
+            'services.correo.appsscript_url'     => 'https://script.google.com/macros/s/ABC/exec',
+            'services.correo.appsscript_secreto' => 'secreto-de-prueba',
+        ]);
+        Http::fake([
+            'script.google.com/*' => Http::response(['ok' => false, 'error' => 'Service invoked too many times for one day: email.'], 200),
+            'api.brevo.com/*'     => Http::response(['messageId' => '<x@brevo>'], 201),
+        ]);
+        $this->usuarioConToken('ana@test.com');
+
+        $this->pedir()->assertOk();
+        $this->restablecer($this->codigoEnviado())->assertOk();   // el código que llegó por Brevo sirve
+    }
+
+    public function test_el_comando_de_diagnostico_muestra_el_limite_y_el_error(): void
+    {
+        // (el Http::fake de setUp responde 201 para Brevo: aquí se prueba con solo Apps Script, que falla)
+        config(['services.correo.brevo_key' => '',
+                'services.correo.appsscript_url' => 'https://script.google.com/macros/s/ABC/exec',
+                'services.correo.appsscript_secreto' => 'secreto-de-prueba']);
+        Http::fake(['script.google.com/*' => Http::response(['ok' => false, 'error' => 'Service invoked too many times for one day: email.'], 200)]);
+        $this->usuarioConToken('ana@test.com');
+        for ($i = 0; $i < 5; $i++) {
+            \Illuminate\Support\Facades\DB::table('recuperacion_clave')->insert(['id_usuario' => \App\Models\Usuario::first()->id_usuario,
+                'codigo_hash' => str_repeat('a', 64), 'intentos' => 0, 'fecha_creacion' => now()->subMinutes(10 + $i)->format('Y-m-d H:i:s'),
+                'fecha_expira' => now()->format('Y-m-d H:i:s')]);
+        }
+        $this->artisan('migrasense:probar-correo ana@test.com')
+            ->expectsOutputToContain('Google Apps Script')
+            ->expectsOutputToContain('LÍMITE ALCANZADO')
+            ->expectsOutputToContain('too many times')
+            ->assertFailed();
+    }
 }

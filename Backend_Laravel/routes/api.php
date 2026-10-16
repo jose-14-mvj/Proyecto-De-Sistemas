@@ -7,10 +7,12 @@ use App\Http\Controllers\EstadisticaController;
 use App\Http\Controllers\NotificacionController;
 use App\Http\Controllers\PerfilController;
 use App\Http\Controllers\PrediccionController;
+use App\Http\Controllers\PushController;
 use App\Http\Controllers\RecuperacionClaveController;
 use App\Http\Controllers\RecordatorioController;
 use App\Http\Controllers\RegistroController;
 use App\Http\Controllers\ReporteController;
+use App\Http\Controllers\TareaController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -24,6 +26,9 @@ Route::post('/login',    [AuthController::class, 'login'])->middleware('throttle
 // ¿Olvidaste tu contraseña? (código de 6 dígitos por correo)
 Route::post('/clave/olvide',      [RecuperacionClaveController::class, 'olvide'])->middleware('throttle:recuperar');
 Route::post('/clave/restablecer', [RecuperacionClaveController::class, 'restablecer'])->middleware('throttle:restablecer');
+
+// Despertador externo (cron-job.org): envía los recordatorios a su hora. Protegido con X-Cron-Key.
+Route::post('/tareas/recordatorios', [TareaController::class, 'recordatorios'])->middleware('throttle:12,1');
 
 // Protegidas: requieren "Authorization: Bearer <token>"
 Route::middleware('auth:sanctum')->group(function () {
@@ -48,6 +53,12 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     // Recordatorios y notificaciones
+    // Avisos al dispositivo (Web Push)
+    Route::get('/push/clave', [PushController::class, 'clave']);
+    Route::post('/push/suscripcion', [PushController::class, 'suscribir'])->middleware('throttle:20,1');
+    Route::delete('/push/suscripcion', [PushController::class, 'quitar']);
+    Route::post('/push/prueba', [PushController::class, 'prueba'])->middleware('throttle:5,1');
+
     Route::get('/recordatorios', [RecordatorioController::class, 'mostrar']);
     Route::put('/recordatorios', [RecordatorioController::class, 'actualizar']);
     Route::get('/notificaciones', [NotificacionController::class, 'index']);

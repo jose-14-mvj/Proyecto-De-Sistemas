@@ -1,0 +1,2 @@
+FPDF 1.9 (http://www.fpdf.org) de Olivier Plathey, licencia libre (ver license.txt).
+Se incluye aquí para generar el PDF del resumen semanal sin instalar paquetes.
