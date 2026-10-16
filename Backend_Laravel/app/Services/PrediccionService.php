@@ -181,6 +181,12 @@ class PrediccionService
         }
     }
 
+    /** Para el panel local: si el ML despertó con el modelo base, le carga el aprendido. */
+    public function asegurarModeloEnMl(?string $versionMl): bool
+    {
+        return $this->restaurarModeloSiHaceFalta($versionMl);
+    }
+
     /** Revisa un reentrenamiento en curso y, si toca, inicia otro. Nunca lanza errores. */
     public function mantenimientoAprendizaje(): void
     {
@@ -290,6 +296,11 @@ class PrediccionService
                     $cerrar('error', 'No se pudo descargar el modelo aprendido (status '.$r->status().').', $datos);
                     break;
                 }
+                // Lo aprendido en texto legible (si falla, igual se guarda el modelo)
+                $reporte = $this->tieneColumnaReporte() ? $this->reporteDelMl($datos['version']) : null;
+                if ($reporte !== null) {
+                    $datos['reporte'] = $reporte;
+                }
                 DB::transaction(function () use ($fila, $datos, $bin, $sha, $est, $fin) {
                     DB::table('modelo_ml')->where('estado', 'activo')->update(['estado' => 'reemplazado']);
                     DB::table('modelo_ml')->where('id_modelo', $fila->id_modelo)->update($datos + [
@@ -321,6 +332,97 @@ class PrediccionService
         return DB::table('modelo_ml')->orderByDesc('id_modelo')->limit($limite)
             ->get(['id_modelo', 'version', 'estado', 'auc', 'auc_anterior', 'pacientes_reales', 'registros_usados', 'motivo', 'fecha_inicio', 'fecha_fin'])
             ->map(fn ($f) => (array) $f)->all();
+    }
+
+    /* =====================================================================
+     *  Memoria del ML en Aiven: ver, verificar y completar lo aprendido
+     * ===================================================================== */
+
+    /** ¿Ya existe la columna modelo_ml.reporte? (migración 2026_10_16) */
+    public function tieneColumnaReporte(): bool
+    {
+        try {
+            return $this->aprendizajeDisponible()
+                && Cache::remember('ml:col_reporte', now()->addMinutes(10), fn () => Schema::hasColumn('modelo_ml', 'reporte'));
+        } catch (Throwable) {
+            return false;
+        }
+    }
+
+    /** JSON de /metricas del ML, solo si corresponde a esa versión del modelo (si no, null) */
+    public function reporteDelMl(?string $version): ?string
+    {
+        if (! $version) {
+            return null;
+        }
+        try {
+            $r = $this->http(30)->acceptJson()->get(config('services.ml.url').'/metricas');
+            $json = $r->successful() ? $r->json() : null;
+            if (! is_array($json) || ($json['version'] ?? null) !== $version) {
+                return null;
+            }
+            return json_encode($json, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        } catch (Throwable $e) {
+            Log::warning('No se pudo leer /metricas del ML', ['error' => $e->getMessage()]);
+            return null;
+        }
+    }
+
+    /**
+     * Si el modelo activo aún no tiene su "reporte" (modelos anteriores a la columna), lo completa:
+     * se asegura de que el ML tenga cargado ese modelo y guarda su /metricas. Devuelve true si guardó.
+     */
+    public function completarReporteActivo(?string $versionMl): bool
+    {
+        if (! $this->tieneColumnaReporte()) {
+            return false;
+        }
+        $activo = DB::table('modelo_ml')->where('estado', 'activo')->orderByDesc('id_modelo')->first(['id_modelo', 'version', 'reporte']);
+        if (! $activo || ! $activo->version || $activo->reporte) {
+            return false;
+        }
+        if ($versionMl !== $activo->version) {
+            $this->restaurarModeloSiHaceFalta($versionMl);
+        }
+        $reporte = $this->reporteDelMl($activo->version);
+        if ($reporte === null) {
+            return false;
+        }
+        DB::table('modelo_ml')->where('id_modelo', $activo->id_modelo)->update(['reporte' => $reporte]);
+        return true;
+    }
+
+    /**
+     * Lo que hay guardado en Aiven, fila por fila (sin devolver el binario):
+     * tamaño, si el archivo está sano (su SHA-256 coincide) y lo aprendido en legible.
+     */
+    public function memoria(): array
+    {
+        if (! $this->aprendizajeDisponible()) {
+            return [];
+        }
+        $conReporte = $this->tieneColumnaReporte();
+        $filas = [];
+        foreach (DB::table('modelo_ml')->orderBy('id_modelo')->pluck('id_modelo') as $id) {
+            $f = (array) DB::table('modelo_ml')->where('id_modelo', $id)->first();   // una a la vez: el archivo pesa
+            $archivo = $f['archivo'] ?? null;
+            $bin = $archivo ? base64_decode($archivo, true) : false;
+            $f['guardado'] = (bool) $archivo;
+            $f['kb'] = $bin !== false && $archivo ? round(strlen($bin) / 1024, 1) : null;
+            $f['sano'] = $bin !== false && $archivo ? hash_equals((string) $f['sha256'], hash('sha256', $bin)) : null;
+            $f['reporte'] = $conReporte && ! empty($f['reporte']) ? json_decode($f['reporte'], true) : null;
+            unset($f['archivo']);
+            $filas[] = $f;
+        }
+        return $filas;
+    }
+
+    /** Binario del modelo guardado (para exportarlo) o null */
+    public function archivoModelo(int $idModelo): ?string
+    {
+        $b64 = DB::table('modelo_ml')->where('id_modelo', $idModelo)->value('archivo');
+        $bin = $b64 ? base64_decode($b64, true) : false;
+        return $bin === false ? null : $bin;
     }
 
     /** Todos los usuarios, SIN identificar, para reentrenar el ML con datos reales. */

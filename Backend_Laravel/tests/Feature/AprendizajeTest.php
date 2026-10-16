@@ -122,9 +122,12 @@ class AprendizajeTest extends TestCase
                 'version' => '2.0.0-r2', 'auc_personas_nuevas' => 0.891, 'auc_anterior' => 0.883, 'pacientes_reales' => 9, 'filas_reales' => 700]),
             self::ML.'/modelo/descargar' => Http::response('nuevo-modelo', 200,
                 ['X-Sha256' => hash('sha256', 'nuevo-modelo'), 'X-Modelo-Version' => '2.0.0-r2']),
+            self::ML.'/metricas' => Http::response(['version' => '2.0.0-r2', 'datos' => ['pacientes_reales' => 9],
+                'lo_que_mas_pesa' => [['caracteristica' => 'tasa_mensual_personal', 'importancia' => 0.15]]]),
         ]);
 
         $fila = app(\App\Services\PrediccionService::class)->revisarReentreno();
+        $this->assertSame('tasa_mensual_personal', json_decode($fila->reporte, true)['lo_que_mas_pesa'][0]['caracteristica']);
 
         $this->assertSame('activo', $fila->estado);
         $this->assertSame('2.0.0-r2', $fila->version);
@@ -190,5 +193,72 @@ class AprendizajeTest extends TestCase
     {
         $this->modeloActivo('2.0.0-r1');
         $this->artisan('migrasense:ml-reentrenar --estado')->expectsOutputToContain('Historial de aprendizaje')->assertSuccessful();
+    }
+
+    public function test_si_metricas_es_de_otra_version_no_guarda_reporte_pero_si_el_modelo(): void
+    {
+        $id = DB::table('modelo_ml')->insertGetId(['estado' => 'en_curso', 'registros_usados' => 30,
+            'fecha_inicio' => Carbon::now()->subMinutes(5)->format('Y-m-d H:i:s')], 'id_modelo');
+        Http::fake([
+            self::ML.'/reentrenar/estado' => Http::response(['estado' => 'terminado', 'aceptado' => true, 'version' => '2.0.0-r2']),
+            self::ML.'/modelo/descargar' => Http::response('m', 200, ['X-Sha256' => hash('sha256', 'm'), 'X-Modelo-Version' => '2.0.0-r2']),
+            self::ML.'/metricas' => Http::response(['version' => '2.0.0']),
+        ]);
+        $fila = app(\App\Services\PrediccionService::class)->revisarReentreno();
+        $this->assertSame('activo', $fila->estado);
+        $this->assertNull($fila->reporte);
+        $this->assertSame($id, (int) $fila->id_modelo);
+    }
+
+    public function test_la_memoria_detecta_archivos_sanos_y_danados(): void
+    {
+        $bueno = $this->modeloActivo('2.0.0-r1', 'binario-bueno');
+        $malo = DB::table('modelo_ml')->insertGetId(['version' => '2.0.0-r0', 'estado' => 'reemplazado',
+            'archivo' => base64_encode('otro'), 'sha256' => str_repeat('a', 64), 'registros_usados' => 0], 'id_modelo');
+        $rechazado = DB::table('modelo_ml')->insertGetId(['estado' => 'rechazado', 'registros_usados' => 0], 'id_modelo');
+
+        $m = collect(app(\App\Services\PrediccionService::class)->memoria())->keyBy('id_modelo');
+        $this->assertTrue($m[$bueno]['sano']);
+        $this->assertFalse($m[$malo]['sano']);
+        $this->assertNull($m[$rechazado]['sano']);
+        $this->assertArrayNotHasKey('archivo', $m[$bueno]);
+    }
+
+    public function test_el_comando_de_memoria_completa_lo_aprendido_y_exporta(): void
+    {
+        $id = $this->modeloActivo('2.0.0-r1', 'binario-x');
+        Http::fake([
+            self::ML.'/salud' => Http::response(['version' => '2.0.0-r1']),
+            self::ML.'/metricas' => Http::response(['version' => '2.0.0-r1', 'datos' => ['pacientes_reales' => 7],
+                'lo_que_mas_pesa' => [['caracteristica' => 'ciclo_relativo', 'importancia' => 0.02]]]),
+        ]);
+        $this->artisan('migrasense:ml-memoria --exportar')
+            ->expectsOutputToContain('MEMORIA DEL ML EN AIVEN')
+            ->expectsOutputToContain('ciclo_relativo')
+            ->assertSuccessful();
+
+        $this->assertNotNull(DB::table('modelo_ml')->where('id_modelo', $id)->value('reporte'));
+        $archivo = storage_path('app/memoria_ml/modelo_2.0.0-r1.joblib');
+        $this->assertSame('binario-x', file_get_contents($archivo));
+        @unlink($archivo);
+        @unlink(storage_path('app/memoria_ml/modelo_2.0.0-r1.json'));
+    }
+
+    public function test_el_panel_local_se_genera_sin_datos_personales(): void
+    {
+        $this->modeloActivo('2.0.0-r1');
+        [$u, $t] = $this->usuarioConToken();
+        $this->conRegistros($t);
+        Http::fake([
+            self::ML.'/salud' => Http::response(['version' => '2.0.0-r1', 'aprendido_con_usuarios' => true, 'auc_personas_nuevas' => 0.88]),
+            self::ML.'/metricas' => Http::response(['version' => '2.0.0-r1', 'datos' => ['pacientes_reales' => 1]]),
+        ]);
+        $this->artisan('migrasense:panel-ml --no-abrir')->assertSuccessful();
+
+        $html = file_get_contents(storage_path('app/panel_ml.html'));
+        $this->assertStringContainsString('Memoria guardada en Aiven', $html);
+        $this->assertStringContainsString('2.0.0-r1', $html);
+        $this->assertStringNotContainsString($u->correo, $html);
+        @unlink(storage_path('app/panel_ml.html'));
     }
 }

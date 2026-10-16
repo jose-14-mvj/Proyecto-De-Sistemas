@@ -303,6 +303,7 @@ CREATE TABLE modelo_ml (
   sha256 CHAR(64) NULL,
   tamano_bytes INTEGER NULL,
   archivo TEXT NULL,
+  reporte TEXT NULL,
   fecha_inicio DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   fecha_fin DATETIME NULL
 );
