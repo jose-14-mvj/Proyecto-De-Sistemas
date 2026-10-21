@@ -138,7 +138,7 @@ Cada entrega importante tiene su **versión** (`v1.0.0`, `v1.1.0`…) con su *re
 | Integrante | GitHub |
 |---|---|
 | Ariel Acarapi | [@ArielAcarapi](https://github.com/ArielAcarapi) |
-| Ivo Avendaño | — |
+| Ivo Avendaño | [@IvoIsmael](https://github.com/IvoIsmael) |
 | Juan Miguel Huanca | [@miguelhuanca676-bot](https://github.com/miguelhuanca676-bot) |
 | José Mario Macuchapi | [@jose-14-mvj](https://github.com/jose-14-mvj) |
 | Mijhail Vichini | — |
