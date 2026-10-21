@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" href="assets/img/favicon-32.png">
 <link rel="manifest" href="manifest.webmanifest">
-<meta name="theme-color" content="#4a5c82">
+<meta name="theme-color" content="#f2f4f7" media="(prefers-color-scheme: light)"><meta name="theme-color" content="#11151b" media="(prefers-color-scheme: dark)">
 <link rel="stylesheet" href="css/style.css">
 <script>
 (function(){
@@ -20,50 +20,51 @@
 </head>
 <body>
 <div class="app-shell">
-  <nav class="side-nav">
-    <div class="logo-sm">
-      <img src="assets/img/logo-icon.png" alt="MigraSense">
-      <strong>Migra<span>Sense</span></strong>
+  <aside class="side-nav" aria-label="Menú principal">
+    <a href="dashboard.html" class="logo-sm" aria-label="MigraSense, ir al inicio"><img src="assets/img/logo-icon.png" alt=""><strong>Migra<span>Sense</span></strong></a>
+    <a href="registro.html" class="btn btn-primary side-cta" data-page="registro.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Registrar</span></a>
+    <nav class="side-links">
+      <a href="dashboard.html" class="nav-item" data-page="dashboard.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10.5 12 4l8 6.5"/><path d="M6 9.5V20h12V9.5"/><path d="M10 20v-5h4v5"/></svg><span>Inicio</span></a>
+      <a href="historial.html" class="nav-item" data-page="historial.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4M8 14h3M8 17h6"/></svg><span>Historial</span></a>
+      <a href="consejos.html" class="nav-item" data-page="consejos.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.9.7 1.5 1.5 1.5 2.6V17h4v-.5c0-1.1.6-1.9 1.5-2.6A6 6 0 0 0 12 3Z"/></svg><span>Consejos</span></a>
+      <a href="perfil.html" class="nav-item" data-page="perfil.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4.5 20c.8-3.6 3.9-6 7.5-6s6.7 2.4 7.5 6"/></svg><span>Perfil</span></a>
+    </nav>
+    <div class="side-nav-footer">
+      <a href="perfil.html" class="account-chip">
+        <img class="account-avatar" data-user-avatar src="assets/img/avatar-default.png" alt="">
+        <span class="account-text"><strong data-user-name>Tu cuenta</strong><small data-user-email></small></span>
+      </a>
+      <label class="side-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z"/></svg><span>Modo oscuro</span><span class="switch"><input type="checkbox" class="theme-toggle" aria-label="Modo oscuro"><span class="slider"></span></span></label>
+      <button type="button" class="side-row side-logout" data-logout><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"/><path d="M10 16l-4-4 4-4M6 12h10"/></svg><span>Cerrar sesión</span></button>
     </div>
-    <a href="dashboard.html" class="nav-item" data-page="dashboard.html">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/></svg>
-      Inicio
-    </a>
-    <a href="consejos.html" class="nav-item" data-page="consejos.html">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3 11c1 .7 1 1.4 1 2h4c0-.6 0-1.3 1-2a6 6 0 0 0-3-11Z"/></svg>
-      Consejos
-    </a>
-    <a href="historial.html" class="nav-item" data-page="historial.html">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19V5h16v14M4 9h16M9 13h6M9 16h4"/></svg>
-      Historial
-    </a>
-    <a href="perfil.html" class="nav-item" data-page="perfil.html">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/></svg>
-      Perfil
-    </a>
-        <div class="side-nav-footer">
-      <div class="side-nav-theme">
-        <span class="side-nav-theme-label">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/></svg>
-          Modo oscuro
-        </span>
-        <label class="switch"><input type="checkbox" class="theme-toggle"><span class="slider"></span></label>
+  </aside>
+  <header class="app-bar">
+    <a href="dashboard.html" class="logo-sm" aria-label="MigraSense, ir al inicio"><img src="assets/img/logo-icon.png" alt=""><strong>Migra<span>Sense</span></strong></a>
+    <div class="account-wrap">
+      <button type="button" class="account-btn" id="accountBtn" aria-haspopup="true" aria-expanded="false" aria-controls="accountMenu" aria-label="Tu cuenta">
+        <img data-user-avatar src="assets/img/avatar-default.png" alt="">
+      </button>
+      <div class="account-menu" id="accountMenu" hidden>
+        <div class="account-menu-head"><strong data-user-name>Tu cuenta</strong><small data-user-email></small></div>
+        <a href="perfil.html" class="menu-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4.5 20c.8-3.6 3.9-6 7.5-6s6.7 2.4 7.5 6"/></svg><span>Mi perfil</span></a>
+        <label class="menu-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z"/></svg><span>Modo oscuro</span><span class="switch"><input type="checkbox" class="theme-toggle" aria-label="Modo oscuro"><span class="slider"></span></span></label>
+        <button type="button" class="menu-row menu-logout" data-logout><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"/><path d="M10 16l-4-4 4-4M6 12h10"/></svg><span>Cerrar sesión</span></button>
       </div>
-      <a href="registro.html" class="btn btn-primary btn-sm" style="width:100%;">+ Registrar</a>
     </div>
-  </nav>
-  <div class="screen">
+  </header>
 
-    <div class="topbar hist-top">
+  <main class="screen" id="contenido">
+
+    <header class="page-head">
       <div>
-        <h2 style="font-size:1.3rem;">Tu historial</h2>
-        <p class="muted small">Todos tus registros en un solo lugar</p>
+        <h1 class="page-title">Historial</h1>
+        <p class="page-sub">Tus señales y migrañas registradas, con sus patrones.</p>
       </div>
-      <button class="btn btn-primary report-btn" id="reportBtn" type="button">
+      <button class="btn btn-outline report-btn" id="reportBtn" type="button">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5Z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg>
         Generar reporte
       </button>
-    </div>
+    </header>
 
     <div id="statsBox"></div>
 
@@ -82,7 +83,7 @@
     <div id="calBox" style="display:none; margin-bottom:16px;"></div>
     <div class="day-pill" id="dayPill" style="display:none;"><span></span><button type="button" aria-label="Quitar filtro de día">×</button></div>
 
-    <div id="recordsList" class="stagger-in records-grid"></div>
+    <div id="recordsList" class="records-grid"></div>
 
     <div class="empty-state" id="emptyState" style="display:none;">
       <svg class="empty-illustration" viewBox="0 0 160 160" fill="none">
@@ -96,32 +97,21 @@
       </svg>
       <p><strong>Todavía no hay registros</strong></p>
       <p class="small mt-8">Registra tus síntomas para empezar a ver patrones aquí.</p>
-      <a href="registro.html" class="btn btn-primary mt-16" style="max-width:220px; margin:16px auto 0;">Registrar ahora</a>
+      <a href="registro.html" class="btn btn-primary btn-sm mt-16">Registrar ahora</a>
     </div>
 
     <!-- Gráficos: debajo de los síntomas y episodios registrados -->
     <div id="chartsBox" class="charts-grid"></div>
 
-  </div>
-
-  <nav class="bottom-nav">
-    <a href="dashboard.html" class="nav-item" data-page="dashboard.html">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/></svg>
-      Inicio
-    </a>
-    <a href="consejos.html" class="nav-item" data-page="consejos.html">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3 11c1 .7 1 1.4 1 2h4c0-.6 0-1.3 1-2a6 6 0 0 0-3-11Z"/></svg>
-      Consejos
-    </a>
-    <a href="historial.html" class="nav-item" data-page="historial.html">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19V5h16v14M4 9h16M9 13h6M9 16h4"/></svg>
-      Historial
-    </a>
-    <a href="perfil.html" class="nav-item" data-page="perfil.html">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/></svg>
-      Perfil
-    </a>
+  </main>
+  <nav class="bottom-nav" aria-label="Navegación">
+    <a href="dashboard.html" class="nav-item" data-page="dashboard.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10.5 12 4l8 6.5"/><path d="M6 9.5V20h12V9.5"/><path d="M10 20v-5h4v5"/></svg><span>Inicio</span></a>
+    <a href="historial.html" class="nav-item" data-page="historial.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4M8 14h3M8 17h6"/></svg><span>Historial</span></a>
+    <a href="registro.html" class="nav-item nav-cta" data-page="registro.html"><span class="nav-cta-dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></span><span>Registrar</span></a>
+    <a href="consejos.html" class="nav-item" data-page="consejos.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.9.7 1.5 1.5 1.5 2.6V17h4v-.5c0-1.1.6-1.9 1.5-2.6A6 6 0 0 0 12 3Z"/></svg><span>Consejos</span></a>
+    <a href="perfil.html" class="nav-item" data-page="perfil.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4.5 20c.8-3.6 3.9-6 7.5-6s6.7 2.4 7.5 6"/></svg><span>Perfil</span></a>
   </nav>
+
 </div>
 
 <div class="modal-overlay" id="detailModal"><div class="modal-sheet" id="detailSheet"></div></div>
@@ -151,6 +141,8 @@
 </div>
 
 <script src="js/app.js"></script>
+<script src="js/preguntas.js"></script>
+<script src="js/api.js"></script>
 <script src="js/analisis.js"></script>
 <script src="js/reporte-pdf.js"></script>
 <script src="js/recordatorios.js"></script>

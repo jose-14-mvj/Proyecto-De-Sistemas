@@ -4,7 +4,7 @@
    detalle de cada registro con opción de editar y eliminar.
    =================================================================== */
 
-document.addEventListener('DOMContentLoaded', () => {
+msAlCargar(() => {
   if (!MS.requireAuth()) return;
 
   const list = document.getElementById('recordsList');
@@ -24,8 +24,8 @@ document.addEventListener('DOMContentLoaded', () => {
   let chartMode = 'semana';             // 'semana' | 'mes'
 
   const ICONS = {
-    prodromico: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1"/></svg>`,
-    episodio: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M12 3c-3 4-7 8-7 12a7 7 0 0 0 14 0c0-4-4-8-7-12Z"/></svg>`
+    prodromico: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1"/></svg>`,
+    episodio: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3c-3 4-7 8-7 12a7 7 0 0 0 14 0c0-4-4-8-7-12Z"/></svg>`
   };
 
   /* ---------- Utilidades ---------- */
@@ -34,6 +34,19 @@ document.addEventListener('DOMContentLoaded', () => {
   const dayKey = d => { d = new Date(d); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
   const humanize = s => String(s || '').replace(/_/g, ' ');
   const fmtLong = iso => new Date(iso).toLocaleString('es-BO', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+  const AURA_TXT = { si: 'Sí', no: 'No', no_se: 'No está seguro/a' };
+  /** Duración legible: exacta si hay hora de fin; "Aún en curso" si sigue */
+  function fmtDuracion(r) {
+    if (r.enCurso) return 'Aún en curso';
+    const m = Number(r.duracionMinutos);
+    if (r.fin && m === 0) return 'Menos de 1 min';
+    if (r.fin && m > 0) {
+      const d = Math.floor(m / 1440), h = Math.floor(m % 1440 / 60), mm = m % 60;
+      return [d ? `${d} d` : '', h ? `${h} h` : '', mm ? `${mm} min` : ''].filter(Boolean).join(' ');
+    }
+    return humanize(r.duracion);
+  }
 
   function fmtInicio(r) {
     if (!r.inicio) return '';
@@ -45,10 +58,16 @@ document.addEventListener('DOMContentLoaded', () => {
   function load() {
     records = MS.get(MS_KEYS.RECORDS, []).sort((a, b) => new Date(b.date) - new Date(a.date));
   }
-  function updateStore(mutator) {
-    MS.set(MS_KEYS.RECORDS, mutator(MS.get(MS_KEYS.RECORDS, [])));
-    load();
-    render();
+  /* Ejecuta un cambio en el servidor y, si sale bien, vuelve a dibujar */
+  function enServidor(btn, tarea, mensaje) {
+    btn.setAttribute('aria-busy', 'true');
+    tarea()
+      .then(() => {
+        load(); render();
+        detailModal.classList.remove('show');
+        msToast(mensaje, '✓');
+      })
+      .catch(err => { btn.removeAttribute('aria-busy'); msToast(err.message, '⚠️'); });
   }
 
   function tagFor(intensidad) {
@@ -219,16 +238,15 @@ document.addEventListener('DOMContentLoaded', () => {
       item.type = 'button';
       item.className = 'record-item record-btn';
       item.dataset.id = r.id;
-      const bg = r.type === 'episodio' ? 'linear-gradient(135deg,#f2994a,#f2b26a)' : 'linear-gradient(135deg,#60a5fa,#2563eb)';
       const detalle = r.type === 'episodio'
-        ? `${esc((r.sintomas || []).slice(0, 2).join(', ') || 'Sin síntomas detallados')}${r.duracion ? ' · ' + esc(humanize(r.duracion)) : ''}`
+        ? `${esc((r.sintomas || []).slice(0, 2).join(', ') || 'Sin síntomas detallados')}${r.duracion || r.enCurso ? ' · ' + esc(fmtDuracion(r)) : ''}`
         : esc((r.sintomas || []).slice(0, 3).join(', ') || 'Sin detalle');
 
       item.innerHTML = `
-        <div class="record-icon" style="background:${bg};">${ICONS[r.type] || ''}</div>
+        <div class="record-icon is-${r.type}">${ICONS[r.type] || ''}</div>
         <div class="record-body">
           <div class="record-top">
-            <span class="record-title">${esc(r.label)}</span>
+            <span class="record-title">${esc(r.label)}${r.enCurso ? '<span class="record-badge">En curso</span>' : ''}</span>
             <span class="record-date">${msFormatDate(r.date)}</span>
           </div>
           <p class="record-desc">${detalle}</p>
@@ -276,10 +294,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if (mode === 'ver') {
       html += `${tagFor(r.intensidad || 0)} <span class="small muted">Intensidad ${r.intensidad || '–'}/10</span>
         <div class="d-list">
-          ${row('Síntomas', esc((r.sintomas || []).join(', ')))}
+          ${row(ep ? 'Síntomas prodrómicos' : 'Síntomas', esc((r.sintomas || []).join(', ')))}
+          ${ep ? row('Con aura', esc(AURA_TXT[r.aura] || '')) : ''}
           ${row('Posibles desencadenantes', esc((r.disparadores || []).join(', ')))}
-          ${row('Duración', esc(humanize(r.duracion)))}
+          ${ep ? row('Duración', esc(fmtDuracion(r))) : ''}
           ${row(ep ? 'Inicio' : 'Hora de aparición', esc(fmtInicio(r)))}
+          ${ep && r.fin ? row('Terminó', esc(fmtLong(r.fin))) : ''}
           ${ep ? row('Medicación', r.medicacion ? esc(r.medicamento || 'Sí') : 'No tomó') : ''}
           ${row('Notas', esc(r.notas))}
         </div>
@@ -322,28 +342,28 @@ document.addEventListener('DOMContentLoaded', () => {
     const id = detailSheet.dataset.id;
     switch (btn.dataset.act) {
       case 'close': detailModal.classList.remove('show'); break;
-      case 'edit': openDetail(id, 'editar'); break;
+      case 'edit': {
+        const r = records.find(x => String(x.id) === String(id));
+        if (r) window.location.href = `registro.html?editar=${encodeURIComponent(r.id)}&tab=${r.type}`;
+        break;
+      }
       case 'cancel': openDetail(id, 'ver'); break;
       case 'ask-delete': openDetail(id, 'borrar'); break;
       case 'save': {
         const intensidad = Number(document.getElementById('edInt').value);
         const notas = document.getElementById('edNotas').value.trim();
         const medEl = document.getElementById('edMed');
-        updateStore(all => all.map(r => {
-          if (String(r.id) !== String(id)) return r;
-          const upd = { ...r, intensidad, notas };
-          if (medEl) { upd.medicamento = medEl.value.trim(); upd.medicacion = !!upd.medicamento; }
-          return upd;
-        }));
-        detailModal.classList.remove('show');
-        msToast('Registro actualizado', '✓');
+        const r = records.find(x => String(x.id) === String(id));
+        const datos = { intensidad, notas };
+        if (medEl) datos.medicamento = medEl.value.trim();
+        enServidor(btn, () => MSApi.editarRegistro(r, datos), 'Registro actualizado');
         break;
       }
-      case 'delete':
-        updateStore(all => all.filter(r => String(r.id) !== String(id)));
-        detailModal.classList.remove('show');
-        msToast('Registro eliminado', '✓');
+      case 'delete': {
+        const r = records.find(x => String(x.id) === String(id));
+        enServidor(btn, () => MSApi.eliminarRegistro(r), 'Registro eliminado');
         break;
+      }
     }
   });
   detailModal.addEventListener('click', e => { if (e.target === detailModal) detailModal.classList.remove('show'); });
@@ -397,7 +417,11 @@ document.addEventListener('DOMContentLoaded', () => {
       return await new Promise(ok => { const fr = new FileReader(); fr.onload = () => ok(fr.result); fr.onerror = () => ok(null); fr.readAsDataURL(blob); });
     } catch (e) { return null; }   // p. ej. al abrir con file://
   }
+  // Deja constancia del reporte en el servidor (tabla reporte); si falla, igual se genera
+  const anotarReporte = formato => MSApi.req('POST', '/reportes', { dias: reportDias || 0, formato }, { reintentos: 0 }).catch(() => {});
+
   async function crearPDF() {
+    anotarReporte('pdf');
     await cargarLibsPdf();
     return MSReportePDF.generar({
       jsPDF: window.jspdf.jsPDF, user: MS.getUser(), onboarding: MS.get(MS_KEYS.ONBOARDING, {}),
@@ -465,7 +489,8 @@ document.addEventListener('DOMContentLoaded', () => {
       txt += `  Intensidad: ${r.intensidad}/10\n`;
       if (r.sintomas && r.sintomas.length) txt += `  Síntomas: ${r.sintomas.join(', ')}\n`;
       if (r.disparadores && r.disparadores.length) txt += `  Posibles desencadenantes: ${r.disparadores.join(', ')}\n`;
-      if (r.duracion) txt += `  Duración: ${humanize(r.duracion)}\n`;
+      if (r.duracion || r.enCurso) txt += `  Duración: ${fmtDuracion(r)}\n`;
+      if (r.aura) txt += `  Con aura: ${AURA_TXT[r.aura] || r.aura}\n`;
       if (r.medicacion) txt += `  Medicación tomada: ${r.medicamento || 'Sí'}\n`;
       if (r.notas) txt += `  Notas: ${r.notas}\n`;
       txt += `\n`;
@@ -475,6 +500,7 @@ document.addEventListener('DOMContentLoaded', () => {
     return txt;
   }
   document.getElementById('downloadTxtBtn').addEventListener('click', () => {
+    anotarReporte('txt');
     const blob = new Blob([buildReportText()], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');

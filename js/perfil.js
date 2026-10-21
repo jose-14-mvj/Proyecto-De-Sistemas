@@ -1,8 +1,10 @@
 /* ===================================================================
    MigraSense — perfil.js
+   Datos de la cuenta (PUT /api/cuenta), contraseña, eliminar cuenta,
+   cuestionario y recordatorios. Todo se guarda en el servidor.
    =================================================================== */
 
-document.addEventListener('DOMContentLoaded', () => {
+msAlCargar(() => {
   if (!MS.requireAuth({ requireOnboarding: false })) return;
 
   const user = MS.getUser() || { name: 'Usuario', email: '' };
@@ -22,6 +24,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function paintPhoto(u) {
     avatarImg.src = MS.avatarSrc(u);
     removeBtn.style.display = u && u.photo ? '' : 'none';
+    if (typeof msPintarCuenta === 'function') msPintarCuenta();   // también la barra y el menú de cuenta
   }
   paintPhoto(user);
 
@@ -44,7 +47,7 @@ document.addEventListener('DOMContentLoaded', () => {
     reader.onload = () => {
       const img = new Image();
       img.onload = () => {
-        // Se recorta al centro (cuadrada) y se reduce a 256px para que quepa en localStorage
+        // Se recorta al centro (cuadrada) y se reduce a 256px (el servidor acepta hasta 300 KB)
         const SIZE = 256;
         const canvas = document.createElement('canvas');
         canvas.width = canvas.height = SIZE;
@@ -54,14 +57,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const side = Math.min(img.width, img.height);
         ctx.drawImage(img, (img.width - side) / 2, (img.height - side) / 2, side, side, 0, 0, SIZE, SIZE);
         const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
-        try {
-          const current = MS.getUser() || user;
-          MS.set(MS_KEYS.USER, { ...current, photo: dataUrl });
-          paintPhoto(MS.getUser());
-          msToast('Foto de perfil actualizada', '📷');
-        } catch (e) {
-          msToast('No se pudo guardar la foto', '⚠️');
-        }
+        const current = MS.getUser() || user;
+        MSApi.actualizarCuenta({ name: current.name, photo: dataUrl })
+          .then(u => { paintPhoto(u); msToast('Foto de perfil actualizada', '📷'); })
+          .catch(err => msToast(err.message, '⚠️'));
         photoInput.value = '';
       };
       img.onerror = () => { msToast('No se pudo leer la imagen', '⚠️'); photoInput.value = ''; };
@@ -73,10 +72,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   removeBtn.addEventListener('click', () => {
     const current = MS.getUser() || user;
-    const { photo, ...rest } = current;
-    MS.set(MS_KEYS.USER, rest);
-    paintPhoto(rest);
-    msToast('Volviste a la foto predeterminada', '✅');
+    MSApi.actualizarCuenta({ name: current.name, photo: null })
+      .then(u => { paintPhoto(u); msToast('Volviste a la foto predeterminada', '✅'); })
+      .catch(err => msToast(err.message, '⚠️'));
   });
 
   /* ---------- Resumen del perfil de migraña (respuestas del cuestionario) ---------- */
@@ -119,16 +117,73 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   /* ---------- Guardar datos personales ---------- */
+  const pEmail = document.getElementById('pEmail');
+  const fieldPassActual = document.getElementById('fieldPassActual');
+  const pPassActual = document.getElementById('pPassActual');
+  // Cambiar el correo pide la contraseña actual (lo exige el servidor)
+  pEmail.addEventListener('input', () => {
+    fieldPassActual.hidden = pEmail.value.trim().toLowerCase() === String((MS.getUser() || user).email).toLowerCase();
+  });
+
+  const ocupado = (btn, si) => { if (si) btn.setAttribute('aria-busy', 'true'); else btn.removeAttribute('aria-busy'); };
+
   document.getElementById('profileForm').addEventListener('submit', (e) => {
     e.preventDefault();
+    const btn = e.target.querySelector('button[type="submit"]');
     const name = document.getElementById('pName').value.trim();
-    const email = document.getElementById('pEmail').value.trim();
+    const email = pEmail.value.trim();
     if (!name || !email) { msToast('Completa nombre y correo', '⚠️'); return; }
-    const current = MS.getUser() || user;          // relee: conserva la foto guardada
-    MS.set(MS_KEYS.USER, { ...current, name, email });
-    document.getElementById('profileName').textContent = name;
-    document.getElementById('profileEmail').textContent = email;
-    msToast('Perfil actualizado', '✅');
+    const datos = { name, email };
+    if (!fieldPassActual.hidden) {
+      if (!pPassActual.value) { msToast('Escribe tu contraseña actual para cambiar el correo', '⚠️'); pPassActual.focus(); return; }
+      datos.current_password = pPassActual.value;
+    }
+    ocupado(btn, true);
+    MSApi.actualizarCuenta(datos)
+      .then(u => {
+        document.getElementById('profileName').textContent = u.name; if (typeof msPintarCuenta === 'function') msPintarCuenta();
+        document.getElementById('profileEmail').textContent = u.email;
+        document.getElementById('pName').value = u.name;
+        pEmail.value = u.email;
+        pPassActual.value = ''; fieldPassActual.hidden = true;
+        msToast('Perfil actualizado', '✅');
+      })
+      .catch(err => msToast(err.message, '⚠️'))
+      .finally(() => ocupado(btn, false));
+  });
+
+  /* ---------- Cambiar contraseña ---------- */
+  document.getElementById('claveForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const btn = e.target.querySelector('button[type="submit"]');
+    const actual = document.getElementById('cActual').value;
+    const nueva = document.getElementById('cNueva').value;
+    const nueva2 = document.getElementById('cNueva2').value;
+    if (!actual) { msToast('Escribe tu contraseña actual', '⚠️'); return; }
+    if (nueva.length < 10 || !/[a-z]/.test(nueva) || !/[A-Z]/.test(nueva) || !/\d/.test(nueva)) {
+      msToast('La nueva contraseña necesita 10 caracteres, mayúscula, minúscula y número', '⚠️'); return;
+    }
+    if (nueva !== nueva2) { msToast('Las contraseñas nuevas no coinciden', '⚠️'); return; }
+    ocupado(btn, true);
+    MSApi.req('PUT', '/cuenta/clave', { current_password: actual, password: nueva })
+      .then(() => { e.target.reset(); msToast('Contraseña actualizada. Se cerró la sesión en tus otros dispositivos.', '🔒'); })
+      .catch(err => msToast(err.message, '⚠️'))
+      .finally(() => ocupado(btn, false));
+  });
+
+  /* ---------- Eliminar cuenta ---------- */
+  document.getElementById('borrarCuentaBtn').addEventListener('click', (e) => {
+    const clave = document.getElementById('bClave').value;
+    if (!clave) { msToast('Escribe tu contraseña para confirmar', '⚠️'); return; }
+    if (!confirm('¿Seguro? Tu cuenta y todos tus registros se borrarán para siempre.')) return;
+    ocupado(e.target, true);
+    MSApi.req('DELETE', '/cuenta', { password: clave })
+      .then(() => {
+        MSApi.limpiarLocal();
+        msToast('Tu cuenta fue eliminada', '👋');
+        setTimeout(() => { window.location.href = 'register.html'; }, 1200);
+      })
+      .catch(err => { ocupado(e.target, false); msToast(err.message, '⚠️'); });
   });
 
   /* ---------- Recordatorios (lógica real en js/recordatorios.js) ---------- */
@@ -136,7 +191,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const remStatus = $('remStatus'), remNext = $('remNext'), remEnable = $('remEnableBtn'), remTest = $('remTestBtn');
 
   const ESTADOS = {
-    granted: ['ok', 'Avisos del dispositivo activados. Te notificaremos a la hora elegida mientras MigraSense esté abierta o instalada.'],
+    granted: ['ok', 'Avisos activados en este dispositivo: te llegarán a la hora elegida, aunque MigraSense esté cerrada.'],
+    'granted-local': ['warn', 'Los avisos están permitidos, pero este dispositivo todavía no quedó registrado en el servidor. Toca «Enviar prueba» para registrarlo.'],
     denied: ['bad', 'Los avisos están bloqueados en este navegador. Habilítalos desde el candado junto a la dirección web. Mientras tanto verás los recordatorios dentro de la app.'],
     default: ['warn', 'Los avisos del dispositivo aún no están activados. Verás los recordatorios dentro de la app.'],
     'no-soportado': ['warn', 'Este navegador no admite avisos del dispositivo (en iPhone, instala MigraSense en la pantalla de inicio). Verás los avisos dentro de la app.']
@@ -151,7 +207,8 @@ document.addEventListener('DOMContentLoaded', () => {
     $('pWeeklyDay').value = String(s.weekly.day);
     $('pWeeklyTime').value = s.weekly.time;
     const p = MSRec.permiso();
-    const [estado, texto] = ESTADOS[p] || ESTADOS.default;
+    const clave = p === 'granted' && MSRec.soportaPush() && !MSRec.pushActivo() ? 'granted-local' : p;
+    const [estado, texto] = ESTADOS[clave] || ESTADOS.default;
     remStatus.dataset.estado = estado;
     remStatus.textContent = texto;
     remEnable.style.display = p === 'default' ? '' : 'none';
@@ -161,6 +218,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function activarSiHaceFalta() {
     if (MSRec.permiso() === 'default') await MSRec.pedirPermiso();
+    if (MSRec.permiso() === 'granted') await MSRec.suscribirPush();
     pintarRecordatorios();
   }
   const HORA_OK = v => /^([01]\d|2[0-3]):[0-5]\d$/.test(v);
@@ -200,13 +258,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
   remEnable.addEventListener('click', async () => {
     const p = await MSRec.pedirPermiso();
+    const r = p === 'granted' ? await MSRec.suscribirPush() : p;
     pintarRecordatorios();
-    if (p === 'granted') msToast('Avisos del dispositivo activados', '✅');
+    if (r === 'ok') msToast('Avisos activados: llegarán aunque la app esté cerrada', '✅');
+    else if (p === 'granted') msToast('Avisos permitidos; no se pudo registrar el dispositivo en el servidor', '⚠️');
   });
+  // Al entrar al perfil con permiso ya dado, se registra el dispositivo si faltaba
+  if (MSRec.permiso() === 'granted' && MSRec.soportaPush() && !MSRec.pushActivo()) MSRec.suscribirPush().then(pintarRecordatorios);
   remTest.addEventListener('click', async () => {
     const r = await MSRec.probar();
     pintarRecordatorios();
-    if (r === 'ok') msToast('Notificación de prueba enviada', '🔔');
+    if (r === 'ok') msToast('Aviso de prueba enviado: debería aparecer en unos segundos', '🔔');
     else if (r === 'denied') msToast('Las notificaciones están bloqueadas en este navegador', '⚠️');
     else if (r === 'no-soportado') msToast('Este navegador no admite notificaciones del dispositivo', '⚠️');
     else msToast('No se pudo enviar la notificación', '⚠️');

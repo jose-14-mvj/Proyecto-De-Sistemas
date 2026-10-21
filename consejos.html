@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" href="assets/img/favicon-32.png">
 <link rel="manifest" href="manifest.webmanifest">
-<meta name="theme-color" content="#4a5c82">
+<meta name="theme-color" content="#f2f4f7" media="(prefers-color-scheme: light)"><meta name="theme-color" content="#11151b" media="(prefers-color-scheme: dark)">
 <link rel="stylesheet" href="css/style.css">
 <script>
 (function(){
@@ -20,110 +20,115 @@
 </head>
 <body>
 <div class="app-shell">
-  <nav class="side-nav">
-    <div class="logo-sm">
-      <img src="assets/img/logo-icon.png" alt="MigraSense">
-      <strong>Migra<span>Sense</span></strong>
+  <aside class="side-nav" aria-label="Menú principal">
+    <a href="dashboard.html" class="logo-sm" aria-label="MigraSense, ir al inicio"><img src="assets/img/logo-icon.png" alt=""><strong>Migra<span>Sense</span></strong></a>
+    <a href="registro.html" class="btn btn-primary side-cta" data-page="registro.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Registrar</span></a>
+    <nav class="side-links">
+      <a href="dashboard.html" class="nav-item" data-page="dashboard.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10.5 12 4l8 6.5"/><path d="M6 9.5V20h12V9.5"/><path d="M10 20v-5h4v5"/></svg><span>Inicio</span></a>
+      <a href="historial.html" class="nav-item" data-page="historial.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4M8 14h3M8 17h6"/></svg><span>Historial</span></a>
+      <a href="consejos.html" class="nav-item" data-page="consejos.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.9.7 1.5 1.5 1.5 2.6V17h4v-.5c0-1.1.6-1.9 1.5-2.6A6 6 0 0 0 12 3Z"/></svg><span>Consejos</span></a>
+      <a href="perfil.html" class="nav-item" data-page="perfil.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4.5 20c.8-3.6 3.9-6 7.5-6s6.7 2.4 7.5 6"/></svg><span>Perfil</span></a>
+    </nav>
+    <div class="side-nav-footer">
+      <a href="perfil.html" class="account-chip">
+        <img class="account-avatar" data-user-avatar src="assets/img/avatar-default.png" alt="">
+        <span class="account-text"><strong data-user-name>Tu cuenta</strong><small data-user-email></small></span>
+      </a>
+      <label class="side-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z"/></svg><span>Modo oscuro</span><span class="switch"><input type="checkbox" class="theme-toggle" aria-label="Modo oscuro"><span class="slider"></span></span></label>
+      <button type="button" class="side-row side-logout" data-logout><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"/><path d="M10 16l-4-4 4-4M6 12h10"/></svg><span>Cerrar sesión</span></button>
     </div>
-    <a href="dashboard.html" class="nav-item" data-page="dashboard.html">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/></svg>
-      Inicio
-    </a>
-    <a href="consejos.html" class="nav-item" data-page="consejos.html">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3 11c1 .7 1 1.4 1 2h4c0-.6 0-1.3 1-2a6 6 0 0 0-3-11Z"/></svg>
-      Consejos
-    </a>
-    <a href="historial.html" class="nav-item" data-page="historial.html">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19V5h16v14M4 9h16M9 13h6M9 16h4"/></svg>
-      Historial
-    </a>
-    <a href="perfil.html" class="nav-item" data-page="perfil.html">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/></svg>
-      Perfil
-    </a>
-        <div class="side-nav-footer">
-      <div class="side-nav-theme">
-        <span class="side-nav-theme-label">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/></svg>
-          Modo oscuro
-        </span>
-        <label class="switch"><input type="checkbox" class="theme-toggle"><span class="slider"></span></label>
+  </aside>
+  <header class="app-bar">
+    <a href="dashboard.html" class="logo-sm" aria-label="MigraSense, ir al inicio"><img src="assets/img/logo-icon.png" alt=""><strong>Migra<span>Sense</span></strong></a>
+    <div class="account-wrap">
+      <button type="button" class="account-btn" id="accountBtn" aria-haspopup="true" aria-expanded="false" aria-controls="accountMenu" aria-label="Tu cuenta">
+        <img data-user-avatar src="assets/img/avatar-default.png" alt="">
+      </button>
+      <div class="account-menu" id="accountMenu" hidden>
+        <div class="account-menu-head"><strong data-user-name>Tu cuenta</strong><small data-user-email></small></div>
+        <a href="perfil.html" class="menu-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4.5 20c.8-3.6 3.9-6 7.5-6s6.7 2.4 7.5 6"/></svg><span>Mi perfil</span></a>
+        <label class="menu-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z"/></svg><span>Modo oscuro</span><span class="switch"><input type="checkbox" class="theme-toggle" aria-label="Modo oscuro"><span class="slider"></span></span></label>
+        <button type="button" class="menu-row menu-logout" data-logout><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"/><path d="M10 16l-4-4 4-4M6 12h10"/></svg><span>Cerrar sesión</span></button>
       </div>
-      <a href="registro.html" class="btn btn-primary btn-sm" style="width:100%;">+ Registrar</a>
     </div>
-  </nav>
-  <div class="screen">
+  </header>
 
-    <h2 style="font-size:1.3rem; margin-bottom:4px;">Consejos diarios</h2>
-    <p class="muted small" style="margin-bottom:20px;">Pequeños hábitos que pueden ayudarte a reducir tus episodios.</p>
+  <main class="screen" id="contenido">
+
+    <header class="page-head">
+      <div>
+        <h1 class="page-title">Consejos</h1>
+        <p class="page-sub">Pequeños hábitos que pueden ayudarte a reducir tus episodios.</p>
+      </div>
+    </header>
 
     <div class="tips-hero">
       <img src="assets/img/auth-shield.png" alt="">
-      <p class="small" style="color:var(--primary); font-weight:700; line-height:1.5;">Cuerpo tranquilo, mente despejada — así es más difícil que empiece un episodio.</p>
+      <p class="tips-hero-text">Cuerpo tranquilo, mente despejada — así es más difícil que empiece un episodio.</p>
     </div>
 
-    <h3 style="font-size:1.05rem; margin:8px 0 0;">Guías completas</h3>
-    <p class="muted small">Toca una sección para desplegarla.</p>
+    <h2 class="section-title">Guías completas</h2>
+    <p class="section-sub">Toca una guía para abrirla.</p>
     <div id="guias"></div>
 
-    <h3 style="font-size:1.05rem; margin:28px 0 16px;">Hábitos del día a día</h3>
-    <div class="stagger-in tips-grid">
+    <h2 class="section-title">Hábitos del día a día</h2>
+    <div class="tips-grid">
     <div class="card mt-16 tip-blue">
       <div class="tip-head">
-        <span class="tip-icon" style="background:linear-gradient(135deg,#60a5fa,#2563eb);">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M12 3s7 8 7 13a7 7 0 0 1-14 0c0-5 7-13 7-13Z"/></svg>
+        <span class="tip-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3s7 8 7 13a7 7 0 0 1-14 0c0-5 7-13 7-13Z"/></svg>
         </span>
-        <h4 style="font-size:.95rem;">Mantente hidratado/a</h4>
+        <h3 class="tip-title">Mantente hidratado/a</h3>
       </div>
       <p class="small muted">La deshidratación es uno de los desencadenantes más comunes. Intenta beber agua de forma constante durante el día, no solo cuando sientas sed.</p>
     </div>
 
     <div class="card mt-16">
       <div class="tip-head">
-        <span class="tip-icon" style="background:linear-gradient(135deg,#3b82f6,#1d4ed8);">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M20 14a8 8 0 1 1-9-10 6.5 6.5 0 0 0 9 10Z"/></svg>
+        <span class="tip-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 14a8 8 0 1 1-9-10 6.5 6.5 0 0 0 9 10Z"/></svg>
         </span>
-        <h4 style="font-size:.95rem;">Cuida tu horario de sueño</h4>
+        <h3 class="tip-title">Cuida tu horario de sueño</h3>
       </div>
       <p class="small muted">Dormir y despertar a horas irregulares puede desencadenar episodios. Intenta mantener un horario constante, incluso los fines de semana.</p>
     </div>
 
     <div class="card mt-16 tip-orange">
       <div class="tip-head">
-        <span class="tip-icon" style="background:linear-gradient(135deg,#f2994a,#f2b26a);">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3 11c1 .7 1 1.4 1 2h4c0-.6 0-1.3 1-2a6 6 0 0 0-3-11Z"/></svg>
+        <span class="tip-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3 11c1 .7 1 1.4 1 2h4c0-.6 0-1.3 1-2a6 6 0 0 0-3-11Z"/></svg>
         </span>
-        <h4 style="font-size:.95rem;">Gestiona el estrés</h4>
+        <h3 class="tip-title">Gestiona el estrés</h3>
       </div>
       <p class="small muted">Técnicas de respiración, pausas activas o estiramientos cortos durante el día pueden ayudar a reducir la tensión que precede a un episodio.</p>
     </div>
 
     <div class="card mt-16">
       <div class="tip-head">
-        <span class="tip-icon" style="background:linear-gradient(135deg,#4fb787,#7fd1a8);">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M6 3v7a2 2 0 0 0 4 0V3M8 10v11M17 3c-2 1-3 3-3 6s1 5 3 6v6"/></svg>
+        <span class="tip-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3v7a2 2 0 0 0 4 0V3M8 10v11M17 3c-2 1-3 3-3 6s1 5 3 6v6"/></svg>
         </span>
-        <h4 style="font-size:.95rem;">Evita saltarte comidas</h4>
+        <h3 class="tip-title">Evita saltarte comidas</h3>
       </div>
       <p class="small muted">El ayuno prolongado puede bajar tu glucosa y actuar como disparador. Intenta comer en horarios regulares.</p>
     </div>
 
     <div class="card mt-16 tip-green">
       <div class="tip-head">
-        <span class="tip-icon" style="background:linear-gradient(135deg,#60a5fa,#2563eb);">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+        <span class="tip-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
         </span>
-        <h4 style="font-size:.95rem;">Descansa la vista</h4>
+        <h3 class="tip-title">Descansa la vista</h3>
       </div>
       <p class="small muted">Si pasas muchas horas frente a una pantalla, aplica la regla 20-20-20: cada 20 minutos, mira algo a 20 pies (6 metros) durante 20 segundos.</p>
     </div>
 
     <div class="card mt-16">
       <div class="tip-head">
-        <span class="tip-icon" style="background:linear-gradient(135deg,#1d4ed8,#1e3a8a);">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M4 19V5h16v14M4 9h16M9 13h6M9 16h4"/></svg>
+        <span class="tip-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19V5h16v14M4 9h16M9 13h6M9 16h4"/></svg>
         </span>
-        <h4 style="font-size:.95rem;">Registra siempre que puedas</h4>
+        <h3 class="tip-title">Registra siempre que puedas</h3>
       </div>
       <p class="small muted">Entre más consistente seas registrando tus síntomas prodrómicos, más precisas serán las predicciones de MigraSense.</p>
       <a href="registro.html" class="btn btn-primary btn-sm mt-8">Registrar ahora</a>
@@ -135,29 +140,20 @@
       Si tus episodios son frecuentes o intensos, consulta con un profesional de salud.
     </p>
 
-  </div>
-
-  <nav class="bottom-nav">
-    <a href="dashboard.html" class="nav-item" data-page="dashboard.html">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/></svg>
-      Inicio
-    </a>
-    <a href="consejos.html" class="nav-item" data-page="consejos.html">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3 11c1 .7 1 1.4 1 2h4c0-.6 0-1.3 1-2a6 6 0 0 0-3-11Z"/></svg>
-      Consejos
-    </a>
-    <a href="historial.html" class="nav-item" data-page="historial.html">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19V5h16v14M4 9h16M9 13h6M9 16h4"/></svg>
-      Historial
-    </a>
-    <a href="perfil.html" class="nav-item" data-page="perfil.html">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/></svg>
-      Perfil
-    </a>
+  </main>
+  <nav class="bottom-nav" aria-label="Navegación">
+    <a href="dashboard.html" class="nav-item" data-page="dashboard.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10.5 12 4l8 6.5"/><path d="M6 9.5V20h12V9.5"/><path d="M10 20v-5h4v5"/></svg><span>Inicio</span></a>
+    <a href="historial.html" class="nav-item" data-page="historial.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4M8 14h3M8 17h6"/></svg><span>Historial</span></a>
+    <a href="registro.html" class="nav-item nav-cta" data-page="registro.html"><span class="nav-cta-dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></span><span>Registrar</span></a>
+    <a href="consejos.html" class="nav-item" data-page="consejos.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.9.7 1.5 1.5 1.5 2.6V17h4v-.5c0-1.1.6-1.9 1.5-2.6A6 6 0 0 0 12 3Z"/></svg><span>Consejos</span></a>
+    <a href="perfil.html" class="nav-item" data-page="perfil.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4.5 20c.8-3.6 3.9-6 7.5-6s6.7 2.4 7.5 6"/></svg><span>Perfil</span></a>
   </nav>
+
 </div>
 
 <script src="js/app.js"></script>
+<script src="js/preguntas.js"></script>
+<script src="js/api.js"></script>
 <script src="js/analisis.js"></script>
 <script src="js/recordatorios.js"></script>
 <script src="js/consejos.js"></script>

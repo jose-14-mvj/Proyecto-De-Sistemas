@@ -362,7 +362,7 @@ const MSReportePDF = (() => {
           `${fmtFecha(r.date)}\n${fmtHora(r.date)} h`,
           ep ? 'Episodio' : 'Prodrómico',
           r.intensidad ? `${r.intensidad}` : '-',
-          ep ? humanize(r.duracion) || '-' : '-',
+          ep ? (r.enCurso ? 'En curso' : humanize(r.duracion) || '-') + (r.aura === 'si' ? '\nCon aura' : '') : '-',
           (r.sintomas || []).join(', ') || '-',
           (r.disparadores || []).join(', ') || '-',
           ep ? (r.medicacion ? (r.medicamento || 'Sí') : 'No') : '-',

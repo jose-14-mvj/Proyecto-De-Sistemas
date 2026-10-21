@@ -2,7 +2,8 @@
    MigraSense — app.js
    Utilidades compartidas: sesión de usuario, almacenamiento local,
    toasts, iconos y protección de rutas.
-   Todo se guarda en localStorage; no hay backend real (solo frontend).
+   Los datos viven en el servidor (ver js/api.js); localStorage guarda
+   solo una copia para dibujar rápido y funcionar sin conexión.
    =================================================================== */
 
 const MS_KEYS = {
@@ -81,7 +82,7 @@ function msToast(message, icon = '✅') {
 /* ---------- Marca la pestaña activa del bottom-nav ---------- */
 function msSetActiveNav() {
   const page = window.location.pathname.split('/').pop() || 'dashboard.html';
-  document.querySelectorAll('.nav-item').forEach(item => {
+  document.querySelectorAll('.nav-item, .side-cta').forEach(item => {
     if (item.getAttribute('data-page') === page) {
       item.classList.add('active');
     } else {
@@ -186,27 +187,40 @@ function msInitThemeToggle() {
 document.addEventListener('DOMContentLoaded', msSetActiveNav);
 document.addEventListener('DOMContentLoaded', msInitThemeToggle);
 
-/* ---------- Flecha "hay más contenido abajo" (solo celular) ----------
-   Aparece mientras queda contenido por ver y desaparece al llegar al final.
-   Al tocarla baja suavemente una pantalla. */
-document.addEventListener('DOMContentLoaded', () => {
-  const hayNav = !!document.querySelector('.bottom-nav');
-  if (!hayNav && !document.querySelector('.form-page')) return;
-  const btn = document.createElement('button');
-  btn.type = 'button';
-  btn.className = 'scroll-hint' + (hayNav ? '' : ' no-nav-hint');
-  btn.setAttribute('aria-label', 'Ver más contenido hacia abajo');
-  btn.innerHTML = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>';
-  document.body.appendChild(btn);
+/* ---------- Armazón común: cuenta, menú de cuenta y cerrar sesión ----------
+   La flecha flotante "hay más abajo" se quitó: tapaba contenido y la barra
+   de navegación ya indica dónde estás. */
+function msPintarCuenta() {
+  const u = MS.getUser();
+  const nombre = u && u.name ? u.name : 'Tu cuenta';
+  const correo = u && u.email ? u.email : '';
+  document.querySelectorAll('[data-user-name]').forEach(el => { el.textContent = nombre; });
+  document.querySelectorAll('[data-user-email]').forEach(el => { el.textContent = correo; });
+  document.querySelectorAll('img[data-user-avatar]').forEach(img => { img.src = MS.avatarSrc(u); });
+}
 
-  const actualizar = () => {
-    const resto = document.documentElement.scrollHeight - (window.scrollY + window.innerHeight);
-    btn.classList.toggle('show', resto > 60);
+function msIniciarArmazon() {
+  msPintarCuenta();
+  // Se vuelve a pintar cuando llegan los datos del servidor (js/api.js)
+  if (typeof msDatosListos !== 'undefined') msDatosListos.then(msPintarCuenta).catch(() => {});
+
+  document.querySelectorAll('[data-logout]').forEach(b => b.addEventListener('click', () => {
+    b.disabled = true;
+    msToast('Cerrando sesión…', '👋');
+    setTimeout(() => MS.logout(), 400);
+  }));
+
+  // Menú de la cuenta (celular y tablet)
+  const btn = document.getElementById('accountBtn');
+  const menu = document.getElementById('accountMenu');
+  if (!btn || !menu) return;
+  const abrir = (si) => {
+    menu.hidden = !si;
+    btn.setAttribute('aria-expanded', String(si));
+    if (si) { const p = menu.querySelector('a, button, input'); if (p) p.focus({ preventScroll: true }); }
   };
-  btn.addEventListener('click', () => window.scrollBy({ top: window.innerHeight * 0.7, behavior: 'smooth' }));
-  window.addEventListener('scroll', actualizar, { passive: true });
-  window.addEventListener('resize', actualizar);
-  // el contenido se dibuja con JS después de cargar: se revisa varias veces
-  new MutationObserver(actualizar).observe(document.body, { childList: true, subtree: true });
-  actualizar(); setTimeout(actualizar, 400);
-});
+  btn.addEventListener('click', (e) => { e.stopPropagation(); abrir(menu.hidden); });
+  document.addEventListener('click', (e) => { if (!menu.hidden && !menu.contains(e.target)) abrir(false); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !menu.hidden) { abrir(false); btn.focus(); } });
+}
+document.addEventListener('DOMContentLoaded', msIniciarArmazon);
