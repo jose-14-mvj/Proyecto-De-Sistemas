@@ -34,7 +34,28 @@ const MSAnalisis = (() => {
      Registros recientes    : el resto (prodrómicos, episodios, ritmo, desencadenantes)
      Nivel: < 25 bajo · 25-54 moderado · >= 55 alto
      ------------------------------------------------------------------ */
+  /* Si hay una predicción vigente del modelo de ML (servidor), se usa esa.
+     Las reglas de puntos quedan como respaldo cuando no hay conexión. */
+  const NIVEL_TXT = { bajo: 'bajo', moderado: 'moderado', alto: 'alto', muy_alto: 'muy alto' };
+  function desdeML(p) {
+    const score = Math.round(Number(p.porcentaje) || 0);
+    const nivel = p.nivel === 'muy_alto' ? 'alto' : (NIVEL_TXT[p.nivel] ? p.nivel : 'bajo');   // colores: bajo/moderado/alto
+    const factores = (p.factores || []).map(f => ({
+      grupo: f.factor === 'ciclo' ? 'ritmo' : f.factor, texto: f.texto, pts: Math.round(Number(f.efecto_puntos) || 0)
+    }));
+    const conf = p.confianza === 'baja' ? ' Confianza baja: aún hay pocos registros.' : '';
+    return { score, nivel, nivelML: p.nivel, titulo: `Riesgo ${NIVEL_TXT[p.nivel] || nivel} de migraña`,
+      descripcion: (p.mensaje || '') + conf, factores, sinRegistros: false,
+      fuente: 'ml', confianza: p.confianza, version: p.modelo_version, ventana: p.ventana_horas || 48 };
+  }
+
   function riesgo(registros, onb, ahora = Date.now()) {
+    const ml = (typeof MSApi !== 'undefined') ? MSApi.prediccionGuardada() : null;
+    if (ml) return desdeML(ml);
+    return riesgoReglas(registros, onb, ahora);
+  }
+
+  function riesgoReglas(registros, onb, ahora = Date.now()) {
     onb = onb || {};
     const recs = registros || [];
     const factores = [];
@@ -88,7 +109,7 @@ const MSAnalisis = (() => {
       : 'No se detectan señales de alerta en tus registros recientes.';
 
     factores.sort((a, b) => b.pts - a.pts);
-    return { score, nivel, titulo: `Riesgo ${nivel} de migraña`, descripcion, factores, sinRegistros };
+    return { score, nivel, titulo: `Riesgo ${nivel} de migraña`, descripcion, factores, sinRegistros, fuente: 'reglas' };
   }
 
   /* ------------------------------------------------------------------
@@ -157,7 +178,8 @@ const MSAnalisis = (() => {
      basta con reemplazar el cálculo de `score` y de la ventana de horas por
      la respuesta del modelo, manteniendo el mismo objeto de salida.
      ------------------------------------------------------------------ */
-  const UMBRAL_ALERTA = 55;
+  const UMBRAL_ALERTA = 55;      // reglas de puntos
+  const UMBRAL_ALERTA_ML = 70;   // modelo de ML: nivel "muy alto"
 
   const mediana = a => { const s = [...a].sort((x, y) => x - y), m = Math.floor(s.length / 2); return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
 
@@ -178,10 +200,11 @@ const MSAnalisis = (() => {
     const horasDesde = x => (ahora - ts(x)) / 3600000;
     const prodRecientes = recs.filter(x => x.type === 'prodromico' && horasDesde(x) >= 0 && horasDesde(x) <= 72)
       .sort((a, b) => ts(b) - ts(a));
-    const hayRitmo = r.factores.some(f => f.grupo === 'ritmo');
-    const base = { activa: false, score: r.score, nivel: r.nivel, motivos: r.factores.slice(0, 3).map(f => f.texto) };
+    const hayRitmo = r.factores.some(f => f.grupo === 'ritmo' && f.pts > 0);
+    const umbral = r.fuente === 'ml' ? UMBRAL_ALERTA_ML : UMBRAL_ALERTA;
+    const base = { activa: false, score: r.score, nivel: r.nivel, motivos: r.factores.filter(f => f.pts > 0).slice(0, 3).map(f => f.texto) };
 
-    if (r.score < UMBRAL_ALERTA || (!prodRecientes.length && !hayRitmo)) return base;
+    if (r.score < umbral || (!prodRecientes.length && !hayRitmo)) return base;
 
     // Ventana estimada (en horas desde ahora)
     let desde, hasta;
@@ -208,5 +231,5 @@ const MSAnalisis = (() => {
       cuerpo: texto + ' Descansa, hidrátate y evita tus desencadenantes.' };
   }
 
-  return { riesgo, patrones, alertaEpisodio, UMBRAL_ALERTA };
+  return { riesgo, riesgoReglas, desdeML, patrones, alertaEpisodio, UMBRAL_ALERTA };
 })();

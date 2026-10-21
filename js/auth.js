@@ -1,7 +1,8 @@
 /* ===================================================================
    MigraSense — auth.js
    Validación y manejo de los formularios de login / registro.
-   Simulado 100% en frontend con localStorage (sin backend).
+   Las cuentas se crean y verifican en el servidor (API Laravel):
+   la contraseña nunca se guarda en el navegador.
    =================================================================== */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -23,8 +24,22 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
+  // Botón "cargando" mientras responde el servidor
+  const ocupado = (btn, si) => {
+    if (!btn) return;
+    if (si) { btn.dataset.texto = btn.textContent; btn.textContent = 'Conectando…'; btn.setAttribute('aria-busy', 'true'); btn.disabled = true; }
+    else { btn.textContent = btn.dataset.texto || btn.textContent; btn.removeAttribute('aria-busy'); btn.disabled = false; }
+  };
+
+  // Si ya hay sesión abierta, no hace falta volver a entrar
+  if (MS.isLoggedIn() && (document.getElementById('loginForm') || document.getElementById('registerForm'))) {
+    window.location.href = MS.hasOnboarding() ? 'dashboard.html' : 'onboarding.html';
+    return;
+  }
+
   const NAME_EMAIL_MAX_LEN = 60;
-  const PASSWORD_MAX_LEN = 25;
+  const PASSWORD_MIN_LEN = 10;
+  const PASSWORD_MAX_LEN = 128;
 
   /* ---------- Reglas de validación reutilizables ---------- */
   const validators = {
@@ -48,12 +63,15 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) return 'Ingresa un correo válido.';
       return '';
     },
-    // Contraseña: 6 a 25 caracteres, sin espacios.
+    // Contraseña (misma regla que el servidor): 10 a 128 caracteres,
+    // con mayúscula, minúscula y número, sin espacios.
     password(value) {
       const v = value;
-      if (v.length < 6) return 'Mínimo 6 caracteres.';
+      if (v.length < PASSWORD_MIN_LEN) return `Mínimo ${PASSWORD_MIN_LEN} caracteres.`;
       if (v.length > PASSWORD_MAX_LEN) return `Máximo ${PASSWORD_MAX_LEN} caracteres.`;
       if (/\s/.test(v)) return 'La contraseña no puede tener espacios.';
+      if (!/[a-z]/.test(v) || !/[A-Z]/.test(v)) return 'Usa al menos una mayúscula y una minúscula.';
+      if (!/\d/.test(v)) return 'Incluye al menos un número.';
       return '';
     },
     password2(value, password) {
@@ -141,7 +159,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const email = emailInput.value.trim();
       const password = passwordInput.value;
       const password2 = password2Input.value;
-      const terms = document.getElementById('terms').checked;
+
 
       let valid = true;
 
@@ -157,21 +175,27 @@ document.addEventListener('DOMContentLoaded', () => {
       const pass2Msg = validators.password2(password2, password);
       showError('fieldPass2', !!pass2Msg, pass2Msg); if (pass2Msg) valid = false;
 
-      const termsField = document.getElementById('fieldTerms');
-      if (!terms) { termsField.style.outline = '2px solid var(--danger)'; termsField.style.borderRadius = '10px'; valid = false; }
-      else { termsField.style.outline = 'none'; }
-
       if (!valid) return;
 
       const trimmedName = name.trim();
-
-      // Cuenta nueva = cuestionario nuevo (evita heredar respuestas de otra persona)
-      MS.remove(MS_KEYS.ONBOARDING);
-      MS.set(MS_KEYS.USER, { name: trimmedName, email, createdAt: new Date().toISOString() });
-      MS.set(MS_KEYS.SESSION, { email, since: new Date().toISOString() });
-
-      msToast('Cuenta creada. ¡Bienvenido/a!', '🎉');
-      setTimeout(() => { window.location.href = 'onboarding.html'; }, 700);
+      const btn = registerForm.querySelector('button[type="submit"]');
+      ocupado(btn, true);
+      MSApi.req('POST', '/registro', { name: trimmedName, email, password, password_confirmation: password2 })
+        .then(data => {
+          MSApi.abrirSesion(data);
+          msToast('Cuenta creada. ¡Bienvenido/a!', '🎉');
+          setTimeout(() => { window.location.href = 'onboarding.html'; }, 700);
+        })
+        .catch(err => {
+          ocupado(btn, false);
+          // Errores de un campo concreto (p. ej. "El correo ya está registrado.")
+          const campos = { name: 'fieldName', email: 'fieldEmail', password: 'fieldPass' };
+          let marcado = false;
+          Object.entries(err.errors || {}).forEach(([k, msgs]) => {
+            if (campos[k]) { showError(campos[k], true, msgs[0]); marcado = true; }
+          });
+          msToast(marcado ? 'Revisa los datos marcados' : err.message, '⚠️');
+        });
     });
   }
 
@@ -189,19 +213,20 @@ document.addEventListener('DOMContentLoaded', () => {
       showError('fieldPass', password.length < 1); if (password.length < 1) valid = false;
       if (!valid) return;
 
-      // Si no existe un usuario registrado todavía, se crea uno de demostración
-      let user = MS.getUser();
-      if (!user || user.email !== email) {
-        MS.remove(MS_KEYS.ONBOARDING);
-        user = { name: email.split('@')[0], email, createdAt: new Date().toISOString() };
-        MS.set(MS_KEYS.USER, user);
-      }
-      MS.set(MS_KEYS.SESSION, { email, since: new Date().toISOString() });
-
-      msToast('Sesión iniciada', '👋');
-      setTimeout(() => {
-        window.location.href = MS.hasOnboarding() ? 'dashboard.html' : 'onboarding.html';
-      }, 500);
+      const btn = loginForm.querySelector('button[type="submit"]');
+      ocupado(btn, true);
+      MSApi.req('POST', '/login', { email, password })
+        .then(data => {
+          MSApi.abrirSesion(data);
+          msToast('Sesión iniciada', '👋');
+          setTimeout(() => {
+            window.location.href = MS.hasOnboarding() ? 'dashboard.html' : 'onboarding.html';
+          }, 500);
+        })
+        .catch(err => {
+          ocupado(btn, false);
+          msToast(err.status === 401 ? 'Correo o contraseña incorrectos' : err.message, '⚠️');
+        });
     });
   }
 
@@ -209,7 +234,12 @@ document.addEventListener('DOMContentLoaded', () => {
   if (forgotLink) {
     forgotLink.addEventListener('click', (e) => {
       e.preventDefault();
-      msToast('Función disponible próximamente', 'ℹ️');
+      // Lleva el correo ya escrito (sin ponerlo en la URL) para no tener que repetirlo
+      const email = (document.getElementById('email')?.value || '').trim();
+      try {
+        if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) sessionStorage.setItem('ms_recuperar_email', email);
+      } catch (err) { /* sin almacenamiento: no pasa nada */ }
+      window.location.href = 'recuperar.html';
     });
   }
 });

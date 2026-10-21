@@ -1,3 +1,4 @@
+
 /* ===================================================================
    MigraSense — consejos.js
    Guías desplegables (alimentación, ejercicios, cuándo consultar).
@@ -37,11 +38,11 @@
       p: ['Sube ambos hombros hacia las orejas. Mantén 3–5 seg.', 'Relájalos lentamente. Repite 10 veces.', 'Después, haz círculos pequeños hacia atrás con los hombros.'] },
     { img: 'ej-espalda', t: 'Estiramiento de la espalda', d: 'Mejora la postura y alivia la tensión.',
       p: ['Junta las manos delante del cuerpo y empuja suavemente hacia adelante, separando los omóplatos.', 'Mantén 15–30 segundos.'], n: 'Repite 2–3 veces.' },
-    { t: 'Relajación muscular progresiva', d: 'Libera la tensión acumulada.',
+    { img: 'ej-relajacion', t: 'Relajación muscular progresiva', d: 'Libera la tensión acumulada.',
       p: ['Manos, hombros, cuello, mandíbula y piernas: en cada zona aprieta 5 seg. y relaja.'], n: 'Hazlo durante 5–10 minutos.' }
   ];
   const AEROBICO = [
-    F('ej-caminar','Caminar'), F('ej-bicicleta','Bicicleta'), F('ej-natacion','Natación'), F('ej-yoga','Yoga'), F('ej-trote','Trote suave (si lo toleras)')
+    F('ej-caminar (2)','Caminar'), F('ej-bicicleta (2)','Bicicleta'), F('ej-natacion (2)','Natación'), F('ej-baile-aerobico (2)','Baile aeróbico'), F('ej-bajo-impacto (2)','Ejercicios de bajo impacto')
   ];
   const DURANTE = ['Respiración lenta y profunda.', 'Estiramientos muy suaves.', 'Relajación muscular.', 'Caminar lentamente si no empeora el dolor.', 'Descansar en un lugar oscuro y tranquilo.', 'Hidratarte.'];
   const EVITAR = ['Correr intensamente.', 'Levantar mucho peso.', 'HIIT (entrenamiento de alta intensidad).', 'Saltos.', 'Ejercicios que aumenten la presión o el esfuerzo.', 'Entrenar con calor intenso o deshidratado.'];
@@ -83,16 +84,30 @@
     note('La constancia es clave. Los resultados no son inmediatos, pero pueden ser muy positivos.');
 
   const medico =
-    note('<strong>Consulta a un médico si…</strong> una migraña aparece por primera vez durante o inmediatamente después de hacer ejercicio, especialmente si es un dolor muy intenso y repentino.', 'bad') +
-    `<p class="small" style="margin-top:12px;"><strong>Busca atención urgente también si el dolor:</strong></p>` + ul(ALARMA) +
-    note('No ignores los síntomas de alarma. Estos consejos pueden ayudar a muchas personas, pero no son un tratamiento único ni garantizan que desaparezcan las migrañas.', 'warn');
+    h('¿Qué son los síntomas prodrómicos?') +
+    `<p>Son señales que algunas personas experimentan horas o incluso días antes de una migraña. No todas las personas presentan los mismos síntomas y no siempre anuncian un episodio.</p>` +
+    h('¿Cuándo pueden aparecer?') +
+    `<p>La fase prodrómica puede comenzar varias horas o hasta uno o dos días antes del dolor. Identificar cambios repetidos ayuda a reconocer tus patrones personales, aunque no permite asegurar cuándo aparecerá una crisis.</p>` +
+    h('Síntomas prodrómicos más comunes') +
+    ul(['Bostezos frecuentes y cansancio.','Cambios de ánimo o irritabilidad.','Rigidez en el cuello.','Dificultad para concentrarse.','Antojos o cambios de apetito.','Sensibilidad a la luz o al ruido.']) +
+    h('Pródromo, aura y dolor: ¿en qué se diferencian?') +
+    `<p>El pródromo incluye cambios generales como cansancio, bostezos o dificultad para concentrarse. El aura puede incluir destellos, puntos ciegos, hormigueos o cambios en el habla y suele durar entre 5 y 60 minutos. Muchas personas tienen migraña sin aura.</p>` +
+    h('Otros cambios que pueden aparecer') +
+    ul(['Mayor sed o necesidad de orinar.','Cambios en la energía, como fatiga o inquietud.','Estreñimiento o molestias digestivas.','Mayor sensibilidad a olores.']) +
+    h('Cómo llevar un registro útil') +
+    `<p>Anota qué sentiste, a qué hora comenzó, cuánto duró, cómo dormiste y si después apareció dolor de cabeza. Comparar varios registros puede ayudarte a reconocer señales que se repiten.</p>` +
+    h('¿Qué hacer si los notas?') +
+    ul(['Registra los síntomas y la hora en MigraSense.','Procura descansar, hidratarte y mantener tus rutinas.','Identifica patrones personales sin asumir que predicen con certeza una migraña.']) +
+    h('¿Cuándo buscar ayuda?') +
+    `<p>Consulta con un profesional si los episodios son nuevos, frecuentes o afectan tus actividades. Un dolor súbito e intenso, pérdida de fuerza, dificultad para hablar o cambios neurológicos nuevos requieren valoración urgente.</p>` +
+    note('El aura es diferente del pródromo: puede causar alteraciones visuales o sensitivas. Si aparecen síntomas neurológicos nuevos o repentinos, busca evaluación médica.', 'warn');
 
   const SECCIONES = [
     { id: 'alimentos', t: 'Alimentación y migraña', s: 'Qué comer, qué vigilar y precauciones', color: 'linear-gradient(135deg,#4fb787,#7fd1a8)',
       icon: '<path d="M6 3v7a2 2 0 0 0 4 0V3M8 10v11M17 3c-2 1-3 3-3 6s1 5 3 6v6"/>', body: alimentacion },
     { id: 'ejercicios', t: 'Ejercicios para aliviar la migraña', s: 'Estiramientos, respiración y ejercicio aeróbico', color: 'linear-gradient(135deg,#60a5fa,#2563eb)',
       icon: '<path d="M3 12h3l2-6 4 12 3-9 2 3h4"/>', body: ejercicios },
-    { id: 'medico', t: 'Cuándo consultar a un médico', s: 'Señales de alarma que no debes ignorar', color: 'linear-gradient(135deg,#ef6f6c,#f2994a)',
+    { id: 'medico', t: 'Información de síntomas prodrómicos', s: 'Qué son, señales frecuentes y recomendaciones', color: 'linear-gradient(135deg,#ef6f6c,#f2994a)',
       icon: '<path d="M12 3 2 21h20L12 3ZM12 10v4M12 17.5v.5"/>', body: medico }
   ];
 
@@ -102,8 +117,8 @@
   root.innerHTML = SECCIONES.map(s => `
     <section class="card acc" id="acc-${s.id}">
       <button type="button" class="acc-btn" aria-expanded="false" aria-controls="panel-${s.id}">
-        <span class="tip-icon" style="background:${s.color};margin:0;">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${s.icon}</svg>
+        <span class="tip-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${s.icon}</svg>
         </span>
         <span class="acc-title"><strong>${s.t}</strong><small>${s.s}</small></span>
         <svg class="acc-chev" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m6 9 6 6 6-6"/></svg>
