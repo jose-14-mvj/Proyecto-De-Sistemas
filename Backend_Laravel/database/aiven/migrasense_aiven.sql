@@ -173,11 +173,15 @@ CREATE TABLE episodio_migrana (
   fecha_inicio   DATE             NOT NULL,
   hora_inicio    TIME             NOT NULL,
   duracion       ENUM('menos_4h','4_24h','1_3d','mas_3d') NOT NULL,
+  fecha_fin      DATETIME         NULL,                 -- hora exacta de fin (Correcciones 4)
+  en_curso       TINYINT(1)       NOT NULL DEFAULT 0,   -- "Aún en curso"
+  con_aura       VARCHAR(6)       NULL,                 -- si | no | no_se
   nivel_dolor    TINYINT UNSIGNED NOT NULL,
   notas          VARCHAR(500)     NULL,
   fecha_creacion DATETIME         NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id_episodio),
   KEY idx_ep_usuario_fecha (id_usuario, fecha_inicio, hora_inicio),
+  KEY idx_ep_usuario_curso (id_usuario, en_curso),
   CONSTRAINT fk_ep_usuario FOREIGN KEY (id_usuario)
     REFERENCES usuario (id_usuario) ON DELETE CASCADE,
   CONSTRAINT ck_ep_dolor CHECK (nivel_dolor BETWEEN 1 AND 10)

@@ -4,6 +4,7 @@ namespace App\Services;
 
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 /**
  * Registros de síntomas (prodrómicos) y episodios de migraña.
@@ -13,6 +14,15 @@ use Illuminate\Support\Facades\DB;
 class RegistroService
 {
     public const TIPOS = ['prodromico', 'episodio'];
+
+    /** Respuestas a "¿Es una migraña con aura?" */
+    public const AURA = ['si', 'no', 'no_se'];
+
+    /** Rango de duración que guarda la BD a partir de los minutos exactos */
+    public static function duracionDesdeMinutos(int $minutos): string
+    {
+        return $minutos < 240 ? 'menos_4h' : ($minutos <= 1440 ? '4_24h' : ($minutos <= 4320 ? '1_3d' : 'mas_3d'));
+    }
 
     /** Catálogos activos con el formato del frontend. */
     public function catalogos(): array
@@ -44,7 +54,7 @@ class RegistroService
             ? $q->get()->filter(fn ($r) => $r->tipo === $tipo)->take($limite)
             : $q->limit($limite)->get();
 
-        return $filas->map(fn ($r) => $this->aFrontend($r))->values()->all();
+        return $this->conExtras($idUsuario, $filas->values()->all());
     }
 
     public function obtener(int $idUsuario, string $tipo, int $id): ?array
@@ -53,7 +63,53 @@ class RegistroService
         $r = DB::table('v_historial')->where('id_usuario', $idUsuario)->where('id', $id)->get()
             ->first(fn ($x) => $x->tipo === $tipo);
 
-        return $r ? $this->aFrontend($r) : null;
+        return $r ? $this->conExtras($idUsuario, [$r])[0] : null;
+    }
+
+    /** Migraña que la persona marcó como "Aún en curso" (como mucho una). */
+    public function enCurso(int $idUsuario): ?array
+    {
+        $id = DB::table('episodio_migrana')->where('id_usuario', $idUsuario)->where('en_curso', 1)
+            ->orderByDesc('id_episodio')->value('id_episodio');
+        return $id ? $this->obtener($idUsuario, 'episodio', (int) $id) : null;
+    }
+
+    /**
+     * "La migraña terminó": guarda la hora de fin (ahora, o la que indique la persona),
+     * quita el "en curso" y calcula la duración. Devuelve false si no estaba en curso.
+     */
+    public function terminar(int $idUsuario, int $id, ?Carbon $fin = null): bool
+    {
+        return DB::transaction(function () use ($idUsuario, $id, $fin) {
+            $ep = DB::table('episodio_migrana')->where('id_episodio', $id)->where('id_usuario', $idUsuario)
+                ->lockForUpdate()->first(['fecha_inicio', 'hora_inicio', 'en_curso']);
+            if (! $ep || ! (int) $ep->en_curso) {
+                return false;
+            }
+            $inicio = Carbon::parse($ep->fecha_inicio.' '.$ep->hora_inicio);
+            $fin = $fin ?? Carbon::now();
+            if ($fin->lt($inicio)) {
+                throw ValidationException::withMessages(['fin' => 'La hora de fin no puede ser anterior al inicio de la migraña.']);
+            }
+            DB::table('episodio_migrana')->where('id_episodio', $id)->where('id_usuario', $idUsuario)->update([
+                'en_curso'  => 0,
+                'fecha_fin' => $fin->format('Y-m-d H:i:s'),
+                'duracion'  => self::duracionDesdeMinutos((int) $inicio->diffInMinutes($fin)),
+            ]);
+            return true;
+        });
+    }
+
+    /** Solo puede haber una migraña "en curso" a la vez */
+    private function asegurarSinOtraEnCurso(int $idUsuario, ?int $excepto = null): void
+    {
+        $q = DB::table('episodio_migrana')->where('id_usuario', $idUsuario)->where('en_curso', 1);
+        if ($excepto) {
+            $q->where('id_episodio', '<>', $excepto);
+        }
+        if ($q->exists()) {
+            throw ValidationException::withMessages(['en_curso' => 'Ya tienes una migraña en curso. Márcala como terminada en Inicio antes de registrar otra en curso.']);
+        }
     }
 
     public function registrarProdromico(int $idUsuario, array $d, Carbon $inicio): int
@@ -64,17 +120,47 @@ class RegistroService
         ]);
     }
 
-    public function registrarEpisodio(int $idUsuario, array $d, Carbon $inicio): int
+    /**
+     * $fin = hora exacta de fin (si se conoce). Con "en_curso" la duración se calcula al terminar;
+     * mientras tanto se guarda el rango del tiempo transcurrido (la columna no admite vacío).
+     */
+    public function registrarEpisodio(int $idUsuario, array $d, Carbon $inicio, ?Carbon $fin = null): int
     {
+        $enCurso = ! empty($d['en_curso']);
+        if ($enCurso) {
+            $this->asegurarSinOtraEnCurso($idUsuario);
+            $fin = null;
+            $duracion = self::duracionDesdeMinutos(max(0, (int) $inicio->diffInMinutes(Carbon::now(), false)));
+        } elseif ($fin) {
+            $duracion = self::duracionDesdeMinutos((int) $inicio->diffInMinutes($fin));
+        } else {
+            $duracion = $d['duracion'];
+        }
+
         $conMedicacion = ! empty($d['medicacion']);
-        return $this->crearEpisodio([
-            $idUsuario, $d['intensidad'], $d['duracion'], $inicio->format('Y-m-d H:i:s'),
+        $id = $this->crearEpisodio([
+            $idUsuario, $d['intensidad'], $duracion, $inicio->format('Y-m-d H:i:s'),
             $conMedicacion ? 1 : 0,
             $conMedicacion ? ($d['medicamento'] ?? null) : null,
             $d['notas'] ?? null,
             implode(',', $d['sintomas'] ?? []),
             implode(',', $d['disparadores'] ?? []),
         ]);
+
+        $extras = [];
+        if ($enCurso) {
+            $extras['en_curso'] = 1;
+        }
+        if ($fin) {
+            $extras['fecha_fin'] = $fin->format('Y-m-d H:i:s');
+        }
+        if (! empty($d['aura'])) {
+            $extras['con_aura'] = $d['aura'];
+        }
+        if ($extras) {
+            DB::table('episodio_migrana')->where('id_episodio', $id)->where('id_usuario', $idUsuario)->update($extras);
+        }
+        return $id;
     }
 
     /** Edita intensidad, notas y (episodios) medicamento. El SP verifica que el registro sea del usuario. */
@@ -91,9 +177,9 @@ class RegistroService
      * todo en una transacción y siempre filtrando por el dueño del registro.
      * Los códigos ya fueron validados contra el catálogo activo (EditarRegistroRequest).
      */
-    public function editarCompleto(int $idUsuario, string $tipo, int $id, array $d, ?Carbon $inicio): void
+    public function editarCompleto(int $idUsuario, string $tipo, int $id, array $d, ?Carbon $inicio, ?Carbon $fin = null): void
     {
-        DB::transaction(function () use ($idUsuario, $tipo, $id, $d, $inicio) {
+        DB::transaction(function () use ($idUsuario, $tipo, $id, $d, $inicio, $fin) {
             $notas = array_key_exists('notas', $d) ? (trim((string) $d['notas']) === '' ? null : trim((string) $d['notas'])) : false;
 
             if ($tipo === 'prodromico') {
@@ -132,6 +218,27 @@ class RegistroService
             if ($inicio) {
                 $cambios['fecha_inicio'] = $inicio->toDateString();
                 $cambios['hora_inicio'] = $inicio->format('H:i:s');
+            }
+            // Fin exacto / "Aún en curso" (la duración se recalcula con las horas reales)
+            $actual = DB::table('episodio_migrana')->where('id_episodio', $id)->first(['fecha_inicio', 'hora_inicio']);
+            $ini = $inicio ?? Carbon::parse($actual->fecha_inicio.' '.$actual->hora_inicio);
+            if (! empty($d['en_curso'])) {
+                $this->asegurarSinOtraEnCurso($idUsuario, $id);
+                $cambios['en_curso'] = 1;
+                $cambios['fecha_fin'] = null;
+                $cambios['duracion'] = self::duracionDesdeMinutos(max(0, (int) $ini->diffInMinutes(Carbon::now(), false)));
+            } elseif ($fin) {
+                if ($fin->lt($ini)) {
+                    throw ValidationException::withMessages(['fin' => 'La hora de fin no puede ser anterior al inicio.']);
+                }
+                $cambios['en_curso'] = 0;
+                $cambios['fecha_fin'] = $fin->format('Y-m-d H:i:s');
+                $cambios['duracion'] = self::duracionDesdeMinutos((int) $ini->diffInMinutes($fin));
+            } elseif (array_key_exists('en_curso', $d)) {
+                $cambios['en_curso'] = 0;
+            }
+            if (array_key_exists('aura', $d)) {
+                $cambios['con_aura'] = in_array($d['aura'], self::AURA, true) ? $d['aura'] : null;
             }
             DB::table('episodio_migrana')->where('id_episodio', $id)->where('id_usuario', $idUsuario)->update($cambios);
 
@@ -184,6 +291,38 @@ class RegistroService
     {
         DB::statement('CALL sp_registrar_episodio(?,?,?,?,?,?,?,?,?,@id_episodio)', $p);
         return (int) DB::selectOne('SELECT @id_episodio AS id')->id;
+    }
+
+    /**
+     * Agrega a los episodios los datos que la vista v_historial no trae (fin exacto, en curso, aura).
+     * Una sola consulta por lista, siempre filtrada por el dueño.
+     */
+    private function conExtras(int $idUsuario, array $filas): array
+    {
+        $ids = array_map(fn ($r) => (int) $r->id, array_filter($filas, fn ($r) => $r->tipo === 'episodio'));
+        $extras = $ids
+            ? DB::table('episodio_migrana')->where('id_usuario', $idUsuario)->whereIn('id_episodio', $ids)
+                ->get(['id_episodio', 'fecha_fin', 'en_curso', 'con_aura'])->keyBy('id_episodio')
+            : collect();
+
+        return array_map(function ($r) use ($extras) {
+            $reg = $this->aFrontend($r);
+            if ($r->tipo !== 'episodio') {
+                return $reg;
+            }
+            $x = $extras->get((int) $r->id);
+            $inicio = Carbon::parse($r->fecha_hora);
+            $enCurso = $x && (int) $x->en_curso === 1;
+            $fin = $x && $x->fecha_fin ? Carbon::parse($x->fecha_fin) : null;
+            $reg['enCurso'] = $enCurso;
+            $reg['fin'] = $fin ? $fin->format('Y-m-d\TH:i:s') : null;
+            $reg['aura'] = $x->con_aura ?? null;
+            $reg['duracionMinutos'] = $fin ? (int) $inicio->diffInMinutes($fin) : null;
+            if ($enCurso) {   // la duración "va creciendo" mientras sigue en curso
+                $reg['duracion'] = self::duracionDesdeMinutos(max(0, (int) $inicio->diffInMinutes(Carbon::now(), false)));
+            }
+            return $reg;
+        }, $filas);
     }
 
     /** Fila de v_historial → formato que ya usa el frontend (js/registro.js / historial.js). */

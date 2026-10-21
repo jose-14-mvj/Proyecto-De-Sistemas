@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Http\Requests\Concerns\LimpiaSintomas;
 use App\Http\Requests\Concerns\ValidaFechaRegistro;
+use App\Services\RegistroService;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -20,8 +21,12 @@ class EpisodioRequest extends FormRequest
     {
         return [
             'intensidad'     => ['required', 'integer', 'between:1,10'],
-            'duracion'       => ['required', Rule::in(['menos_4h', '4_24h', '1_3d', 'mas_3d'])],
+            // duración estimada: solo hace falta si no se envía la hora de fin ni "en curso" (ver withValidator)
+            'duracion'       => ['nullable', Rule::in(['menos_4h', '4_24h', '1_3d', 'mas_3d'])],
             'inicio'         => $this->reglaFecha(),
+            'fin'            => $this->reglaFecha(),
+            'en_curso'       => ['nullable', 'boolean'],
+            'aura'           => ['nullable', Rule::in(RegistroService::AURA)],
             'sintomas'       => ['nullable', 'array', 'max:24'],
             'sintomas.*'     => ['string', 'distinct', Rule::exists('sintoma_prodromico', 'codigo')->where('activo', 1)],
             'disparadores'   => ['nullable', 'array', 'max:12'],
@@ -34,6 +39,12 @@ class EpisodioRequest extends FormRequest
 
     public function attributes(): array
     {
-        return ['sintomas.*' => 'síntoma', 'disparadores.*' => 'desencadenante', 'inicio' => 'fecha y hora'];
+        return ['sintomas.*' => 'síntoma', 'disparadores.*' => 'desencadenante', 'inicio' => 'fecha y hora',
+            'fin' => 'hora de fin', 'aura' => 'respuesta sobre el aura'];
+    }
+
+    public function withValidator($validator): void
+    {
+        $this->validarFinEpisodio($validator, true);
     }
 }

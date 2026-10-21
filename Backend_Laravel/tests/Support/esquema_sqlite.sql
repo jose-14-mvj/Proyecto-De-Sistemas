@@ -103,6 +103,9 @@ CREATE TABLE episodio_migrana (
   fecha_inicio   DATE    NOT NULL,
   hora_inicio    TIME    NOT NULL,
   duracion       VARCHAR(10) NOT NULL,
+  fecha_fin      DATETIME NULL,
+  en_curso       TINYINT NOT NULL DEFAULT 0,
+  con_aura       VARCHAR(6) NULL,
   nivel_dolor    TINYINT NOT NULL CHECK (nivel_dolor BETWEEN 1 AND 10),
   notas          VARCHAR(500) NULL,
   fecha_creacion DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -284,7 +287,7 @@ INSERT INTO sintoma_prodromico (codigo, nombre_sintoma, activo) VALUES
  ('bostezos_repetidos', 'Bostezos repetidos', 1),
  ('cervical', 'Dolor o rigidez cervical', 1),
  ('sonido', 'Sensibilidad al sonido (antiguo)', 0),
- ('auras', 'Auras', 1);
+ ('auras', 'Auras', 0);   -- desactivado en Correcciones 4 (ahora es la pregunta ¿con aura?)
 
 INSERT INTO desencadenante (codigo, nombre, activo) VALUES
  ('estres', 'Estrés', 1),

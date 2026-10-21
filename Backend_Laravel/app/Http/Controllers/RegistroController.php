@@ -49,7 +49,38 @@ class RegistroController extends Controller
     {
         $uid = $request->user()->id_usuario;
         return $this->crear($uid, 'episodio', fn () => $this->registros->registrarEpisodio(
-            $uid, $request->validated(), $request->inicioCarbon()));
+            $uid, $request->validated(), $request->inicioCarbon(), $request->filled('fin') ? $request->finCarbon() : null));
+    }
+
+    /** GET /api/registros/en-curso — la migraña marcada "Aún en curso" (o null) */
+    public function enCurso(Request $request): JsonResponse
+    {
+        return response()->json(['ok' => true, 'registro' => $this->registros->enCurso($request->user()->id_usuario)]);
+    }
+
+    /** POST /api/registros/episodio/{id}/terminar — "La migraña terminó" (fin = ahora, o la hora enviada) */
+    public function terminar(Request $request, int $id): JsonResponse
+    {
+        $request->validate(['fin' => ['nullable', 'date', function ($a, $v, $fail) {
+            try {
+                $t = \Carbon\Carbon::parse($v)->setTimezone(config('app.timezone'));
+            } catch (\Throwable) {
+                return $fail('La fecha no es válida.');
+            }
+            if ($t->gt(\Carbon\Carbon::now()->addMinutes(10))) {
+                $fail('La hora de fin no puede estar en el futuro.');
+            }
+        }]], [], ['fin' => 'hora de fin']);
+
+        $uid = $request->user()->id_usuario;
+        if (! $this->registros->obtener($uid, 'episodio', $id)) {
+            return $this->noEncontrado();
+        }
+        $fin = $request->filled('fin') ? \Carbon\Carbon::parse($request->input('fin'))->setTimezone(config('app.timezone')) : null;
+        if (! $this->registros->terminar($uid, $id, $fin)) {
+            return response()->json(['error' => 'Esta migraña ya estaba marcada como terminada.'], 422);
+        }
+        return response()->json(['ok' => true, 'registro' => $this->registros->obtener($uid, 'episodio', $id)]);
     }
 
     /** GET /api/registros/{tipo}/{id} */
@@ -70,7 +101,8 @@ class RegistroController extends Controller
         try {
             $request->esCompleta()
                 ? $this->registros->editarCompleto($uid, $tipo, $id, $request->validated(),
-                    $request->filled('inicio') ? $request->inicioCarbon() : null)
+                    $request->filled('inicio') ? $request->inicioCarbon() : null,
+                    $tipo === 'episodio' && $request->filled('fin') ? $request->finCarbon() : null)
                 : $this->registros->editar($uid, $tipo, $id, $request->validated());
         } catch (QueryException $e) {
             return $this->errorDeSp($e);

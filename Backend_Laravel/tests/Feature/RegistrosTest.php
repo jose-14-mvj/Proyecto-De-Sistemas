@@ -83,13 +83,16 @@ class RegistrosTest extends TestCase
 
     /* ---------- Correcciones 3 (PDF): Auras, Ningún síntoma y edición completa ---------- */
 
-    public function test_auras_es_un_sintoma_valido_y_ninguno_se_ignora(): void
+    public function test_auras_ya_no_es_sintoma_se_convierte_en_con_aura_y_ninguno_se_ignora(): void
     {
         [, $t] = $this->usuarioConToken();
-        $this->episodio($t, ['sintomas' => ['auras']])->assertStatus(201)->assertJsonPath('registro.sintomas', ['Auras']);
+        // una pantalla vieja que todavía manda "auras": se guarda como "con aura = sí"
+        $this->episodio($t, ['sintomas' => ['auras']])->assertStatus(201)
+            ->assertJsonPath('registro.sintomas', [])->assertJsonPath('registro.aura', 'si');
         $this->episodio($t, ['sintomas' => ['ninguno']])->assertStatus(201)->assertJsonPath('registro.sintomas', []);
-        $this->episodio($t, ['sintomas' => ['ninguno', 'auras']])->assertStatus(201)->assertJsonPath('registro.sintomas', ['Auras']);
-        $this->assertContains('auras', array_column($this->getJson('/api/catalogos', $this->conToken($t))->json('sintomas'), 'id'));
+        $this->episodio($t, ['sintomas' => ['ninguno', 'auras', 'luz']])->assertStatus(201)
+            ->assertJsonPath('registro.sintomas', ['Sensibilidad a la luz'])->assertJsonPath('registro.aura', 'si');
+        $this->assertNotContains('auras', array_column($this->getJson('/api/catalogos', $this->conToken($t))->json('sintomas'), 'id'));
     }
 
     public function test_prodromico_con_solo_ninguno_pide_elegir_un_sintoma(): void
@@ -109,7 +112,7 @@ class RegistrosTest extends TestCase
             'intensidad' => 4, 'duracion' => 'menos_4h', 'inicio' => $nuevoInicio->format('Y-m-d\TH:i'),
             'sintomas' => ['auras', 'nauseas'], 'disparadores' => ['sueno'],
             'medicacion' => false, 'medicamento' => '', 'notas' => 'Corregido',
-            'fin' => $nuevoInicio->copy()->addHours(2)->toIso8601String(), 'duracionMinutos' => 120,   // campos extra del frontend: se ignoran
+            'fin' => $nuevoInicio->copy()->addHours(2)->toIso8601String(), 'duracionMinutos' => 120,   // duracionMinutos se ignora; fin se guarda
         ], $this->conToken($t))->assertOk()
             ->assertJsonPath('registro.intensidad', 4)
             ->assertJsonPath('registro.duracion', 'menos_4h')
@@ -118,9 +121,10 @@ class RegistrosTest extends TestCase
             ->assertJsonPath('registro.medicacion', false)
             ->assertJsonPath('registro.notas', 'Corregido');
 
-        $sint = $this->getJson("/api/registros/episodio/$id", $this->conToken($t))->json('registro.sintomas');
-        sort($sint);
-        $this->assertSame(['Auras', 'Náuseas'], $sint);
+        $guardado = $this->getJson("/api/registros/episodio/$id", $this->conToken($t))->json('registro');
+        $this->assertSame(['Náuseas'], $guardado['sintomas']);   // "auras" ya no es síntoma…
+        $this->assertSame('si', $guardado['aura']);               // …se guarda como "con aura"
+        $this->assertSame(120, $guardado['duracionMinutos']);     // y ahora sí se guarda la hora exacta de fin
 
         // Quitar todos los síntomas ("Ningún síntoma") y volver a tomar medicación sin nombre
         $this->putJson("/api/registros/episodio/$id", ['intensidad' => 4, 'sintomas' => ['ninguno'], 'medicacion' => true, 'medicamento' => ''],

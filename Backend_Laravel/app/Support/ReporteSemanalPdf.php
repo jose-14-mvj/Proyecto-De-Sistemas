@@ -124,8 +124,14 @@ class ReporteSemanalPdf extends \FPDF
                 $detalle[] = 'Síntomas: '.implode(', ', $r['sintomas']);
             }
             if ($r['type'] === 'episodio') {
-                if (! empty($r['duracion'])) {
+                if (! empty($r['enCurso'])) {
+                    $detalle[] = 'Aún en curso';
+                } elseif (! empty($r['duracion'])) {
                     $detalle[] = 'Duración: '.self::duracion($r['duracion']);
+                }
+                $aura = ['si' => 'Con aura', 'no' => 'Sin aura', 'no_se' => 'Aura: no está seguro/a'][$r['aura'] ?? ''] ?? null;
+                if ($aura) {
+                    $detalle[] = $aura;
                 }
                 if (! empty($r['disparadores'])) {
                     $detalle[] = 'Desencadenantes: '.implode(', ', $r['disparadores']);

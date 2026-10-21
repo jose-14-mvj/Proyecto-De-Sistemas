@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Http\Requests\Concerns\LimpiaSintomas;
 use App\Http\Requests\Concerns\ValidaFechaRegistro;
+use App\Services\RegistroService;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -18,7 +19,7 @@ class EditarRegistroRequest extends FormRequest
     use ValidaFechaRegistro, LimpiaSintomas;
 
     /** Campos que convierten la petición en una edición completa */
-    public const CAMPOS_COMPLETOS = ['inicio', 'sintomas', 'duracion', 'disparadores', 'medicacion'];
+    public const CAMPOS_COMPLETOS = ['inicio', 'sintomas', 'duracion', 'disparadores', 'medicacion', 'fin', 'en_curso', 'aura'];
 
     public function authorize(): bool
     {
@@ -45,6 +46,9 @@ class EditarRegistroRequest extends FormRequest
                 'disparadores'   => ['sometimes', 'nullable', 'array', 'max:12'],
                 'disparadores.*' => ['string', 'distinct', Rule::exists('desencadenante', 'codigo')->where('activo', 1)],
                 'medicacion'     => ['sometimes', 'boolean'],
+                'fin'            => array_merge(['sometimes'], $this->reglaFecha()),
+                'en_curso'       => ['sometimes', 'boolean'],
+                'aura'           => ['sometimes', 'nullable', Rule::in(RegistroService::AURA)],
             ];
         }
         return $reglas;
@@ -52,7 +56,15 @@ class EditarRegistroRequest extends FormRequest
 
     public function attributes(): array
     {
-        return ['sintomas.*' => 'síntoma', 'disparadores.*' => 'desencadenante', 'inicio' => 'fecha y hora'];
+        return ['sintomas.*' => 'síntoma', 'disparadores.*' => 'desencadenante', 'inicio' => 'fecha y hora',
+            'fin' => 'hora de fin', 'aura' => 'respuesta sobre el aura'];
+    }
+
+    public function withValidator($validator): void
+    {
+        if ($this->route('tipo') === 'episodio') {
+            $this->validarFinEpisodio($validator, false);
+        }
     }
 
     public function messages(): array

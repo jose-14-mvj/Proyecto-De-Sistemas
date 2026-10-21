@@ -46,6 +46,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/registros', [RegistroController::class, 'index']);
     Route::post('/registros/prodromico', [RegistroController::class, 'crearProdromico']);
     Route::post('/registros/episodio', [RegistroController::class, 'crearEpisodio']);
+    Route::get('/registros/en-curso', [RegistroController::class, 'enCurso']);
+    Route::post('/registros/episodio/{id}/terminar', [RegistroController::class, 'terminar'])->whereNumber('id');
     Route::prefix('/registros/{tipo}/{id}')->whereIn('tipo', ['prodromico', 'episodio'])->whereNumber('id')->group(function () {
         Route::get('/', [RegistroController::class, 'mostrar']);
         Route::put('/', [RegistroController::class, 'editar']);
