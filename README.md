@@ -1,169 +1,152 @@
-# MigraSense — Frontend (HTML + CSS + JS)
+<p align="center">
+  <img src="assets/img/logo-icon.png" alt="Logo de MigraSense" width="96">
+</p>
 
-Frontend funcional del sistema web de registro de síntomas para personas
-con migraña (proyecto "Los Backyardigans"). Inspirado en el flujo de
-onboarding y registro de la app **Flo**, adaptado a migrañas.
+<h1 align="center">MigraSense</h1>
 
-No usa frameworks ni backend: todo el estado (usuario, respuestas del
-cuestionario y registros) se guarda en `localStorage` del navegador, así
-que puedes abrir `index.html` directamente y probar el flujo completo.
+<p align="center">
+  Registro de síntomas y predicción de episodios de migraña<br>
+  <sub>Proyecto de Sistemas I · Universidad del Valle (UNIVALLE) · 2026</sub>
+</p>
 
-## Cómo probarlo
+<p align="center">
+  <a href="https://miguelhuanca676-bot.github.io/migrasense/"><strong>Abrir la aplicación</strong></a> ·
+  <a href="docs/manual-de-usuario.md">Manual de usuario</a> ·
+  <a href="docs/README.md">Documentación técnica</a> ·
+  <a href="CHANGELOG.md">Versiones</a>
+</p>
 
-Ábrelo con un servidor local simple (recomendado, para que las rutas
-funcionen igual que en producción):
+---
+
+## ¿Por qué hicimos esto?
+
+Quien tiene migraña sabe que el dolor casi nunca llega "de la nada". Horas o incluso un día antes suelen
+aparecer señales pequeñas: bostezos que no paran, cansancio raro, molestia con la luz, ganas de comer algo
+en particular, el cuello rígido. A eso se le llama **fase prodrómica**, y el problema es que casi nadie la
+anota, así que cuando llega la crisis ya es tarde para prevenirla.
+
+MigraSense nació de esa idea: una app sencilla donde la persona anota lo que siente en pocos toques y que,
+con esos registros, le avise cuándo es más probable que se venga una migraña. No reemplaza al médico; la
+pensamos como una libreta inteligente que además le sirve al especialista, porque genera un reporte en PDF
+con todo el historial.
+
+## Qué puede hacer
+
+- **Cuestionario inicial** de 13 preguntas para conocer el perfil de migraña de cada persona (frecuencia, duración,
+  horas de sueño, estrés, cafeína, condiciones médicas).
+- **Registrar un síntoma prodrómico** en segundos, con "Más información" en cada síntoma para no confundirse.
+- **Registrar una migraña**: intensidad, desencadenantes, si tuvo aura, medicación y duración. Si la migraña
+  está pasando en ese momento se marca como **"Aún en curso"** y desde Inicio se toca **"La migraña terminó"**.
+- **Predicción del riesgo** para las próximas 24–48 horas con un modelo de *machine learning*, explicando
+  qué factores subieron o bajaron el porcentaje.
+- **Historial** con filtros, calendario, gráficos de patrones y **reporte en PDF** para llevar al médico.
+- **Recordatorios reales**: aviso diario en el celular aunque la app esté cerrada, y un resumen semanal con el
+  PDF por correo.
+- **Cuenta segura**: recuperación de contraseña por correo, cambio de clave, eliminación de la cuenta y de
+  todos sus datos.
+- Diseño **tranquilo para ojos sensibles a la luz**, modo oscuro y uso cómodo en celular, tablet o PC.
+
+<p align="center">
+  <img src="docs/img/manual/04-inicio.png" alt="Pantalla de inicio" width="31%">
+  <img src="docs/img/manual/07-migrana-en-curso.png" alt="Migraña en curso" width="31%">
+  <img src="docs/img/manual/09-historial.png" alt="Historial" width="31%">
+</p>
+
+## Cómo está armado
+
+Son tres piezas que se hablan por internet:
+
+```mermaid
+flowchart LR
+    U([Persona usuaria<br>celular o PC]) --> F[Frontend<br>HTML · CSS · JS<br>GitHub Pages]
+    F -- "API REST + token" --> B[Backend<br>Laravel 9 · PHP 8.2<br>Render]
+    B -- "SQL con TLS" --> D[(MySQL 8.4<br>Aiven)]
+    B -- "datos anónimos" --> M[Servicio de ML<br>Python · FastAPI<br>Render]
+    B -. correo .-> C[Gmail / Brevo]
+    B -. avisos push .-> U
+```
+
+| Parte | Tecnología | Dónde vive |
+|---|---|---|
+| Frontend | HTML, CSS y JavaScript sin frameworks (PWA) | `/` (raíz de este repo) · publicado en GitHub Pages |
+| Backend / API | Laravel 9, Sanctum, Argon2id | [`Backend_Laravel/`](Backend_Laravel) · Render (Docker) |
+| Base de datos | MySQL 8.4: 23 tablas, 6 vistas, 11 procedimientos, 5 triggers | [`database/`](database) y `Backend_Laravel/database` · Aiven |
+| Machine learning | Python, scikit-learn, FastAPI | repo [migrasence-ml](https://github.com/miguelhuanca676-bot/migrasence-ml) · Render |
+
+El detalle de cada parte está en la [documentación técnica](docs/README.md).
+
+## Estructura del repositorio
+
+```
+Proyecto-De-Sistemas/
+├── index.html, login.html, …      Pantallas del frontend
+├── css/  js/  assets/             Estilos, lógica de cada pantalla e imágenes
+├── sw.js, manifest.webmanifest    Service worker (avisos push) y datos de la PWA
+├── Backend_Laravel/               API en Laravel (controladores, servicios, pruebas, Dockerfile)
+├── database/                      Scripts SQL originales de la base de datos
+├── api/                           Primera API en PHP puro (ya reemplazada por Laravel, se guarda como referencia)
+├── docs/                          Documentación técnica, manual de usuario e imágenes
+├── .github/                       Plantillas de issues y pull requests
+├── CHANGELOG.md                   Qué cambió en cada versión
+└── CONTRIBUTING.md                Cómo trabajamos: ramas, commits, PRs y versiones
+```
+
+## Probarlo en tu computadora
+
+Lo más rápido es usar la [versión publicada](https://miguelhuanca676-bot.github.io/migrasense/). Si quieres
+levantarlo localmente necesitas **PHP 8.2**, **Composer** y **MySQL 8** (XAMPP sirve):
 
 ```bash
-cd MigraSense
-python3 -m http.server 8000
-# abre http://localhost:8000
+git clone https://github.com/jose-14-mvj/Proyecto-De-Sistemas.git
+cd Proyecto-De-Sistemas/Backend_Laravel
+composer install
+cp .env.example .env          # completa los datos de tu base de datos
+php artisan key:generate
+php artisan migrate --database=mysql_admin
+php artisan db:seed --database=mysql_admin
+php artisan serve             # API en http://127.0.0.1:8000/api
 ```
 
-También puedes abrir `index.html` haciendo doble clic, pero algunos
-navegadores restringen ciertas cosas al abrir archivos con `file://`.
+Y en otra terminal, desde la raíz del repo:
 
-## Flujo de pantallas
-
-```
-index.html  →  login.html / register.html  →  onboarding.html (9 pasos)
-                                                     ↓
-                          dashboard.html  ⇄  registro.html  ⇄  historial.html
-                                 ↕
-                         perfil.html · consejos.html
+```bash
+python -m http.server 5500    # frontend en http://127.0.0.1:5500
 ```
 
-- **index.html** — decide a dónde mandar al usuario según si ya inició
-  sesión y si completó el cuestionario (usa `localStorage`).
-- **login.html / register.html** — autenticación simulada, con
-  validaciones reales de formulario (correo, contraseña, términos).
-- **onboarding.html** — cuestionario de personalización de 9 pasos
-  (ver detalle abajo). Barra de progreso, botón atrás y "Más tarde".
-- **dashboard.html** — pantalla de inicio: predicción de riesgo (mock),
-  accesos rápidos, banner de "Detectar señales", síntomas recientes y
-  recordatorios.
-- **registro.html** — formulario de registro con dos pestañas:
-  *Síntomas prodrómicos* y *Episodio de migraña completo*.
-- **historial.html** — lista filtrable de todos los registros, gráficos,
-  calendario y **reporte en PDF** (periodo a elegir: 30 días, 3 meses,
-  12 meses o todo; se descarga o se comparte). Conserva una versión `.txt`.
-- **perfil.html** — edición de datos, resumen del perfil de migraña,
-  **recordatorios con hora y día configurables** y cierre de sesión.
-- **consejos.html** — tips generales de bienestar (contenido propio).
+Para que el frontend use tu API local, en la consola del navegador ejecuta
+`localStorage.setItem('ms_api_url', 'http://127.0.0.1:8000/api')`.
+La guía completa, con las variables de entorno y los problemas comunes, está en
+[docs/instalacion.md](docs/instalacion.md).
 
-## Las 9 preguntas del onboarding
+### Pruebas
 
-Diseñadas para que el sistema entienda mejor al paciente (inspirado en
-la profundidad del onboarding de Flo, pero enfocado en migraña):
-
-1. ¿Te han diagnosticado migraña anteriormente?
-2. Rango de edad y sexo biológico (influyen en el patrón hormonal).
-3. Frecuencia habitual de los episodios.
-4. Duración habitual de un episodio.
-5. Intensidad habitual del dolor (escala 1–10).
-6. Disparadores frecuentes (estrés, sueño, alimentos, clima, pantallas,
-   deshidratación, alcohol, olores, ejercicio, ruido, etc.).
-7. Síntomas prodrómicos habituales (sensibilidad a luz/sonido, fatiga,
-   dolor de cuello, antojos, cambios de humor, aura, náuseas, etc.).
-8. Antecedentes familiares y uso de medicación preventiva.
-9. Preferencias de recordatorio diario (activar/desactivar y horario).
-
-Todas se guardan en `localStorage` (`ms_onboarding`) y se muestran luego
-en el perfil y se usan para el cálculo del riesgo mostrado en el inicio.
-
-## Estructura de carpetas
-
-```
-MigraSense/
-├── index.html
-├── login.html
-├── register.html
-├── onboarding.html
-├── dashboard.html
-├── registro.html
-├── historial.html
-├── perfil.html
-├── consejos.html
-├── css/
-│   └── style.css        (sistema de diseño: colores, tipografía, componentes)
-├── js/
-│   ├── app.js            (utilidades compartidas, sesión, catálogos)
-│   ├── auth.js           (login + registro)
-│   ├── onboarding.js     (las 9 preguntas)
-│   ├── dashboard.js
-│   ├── registro.js
-│   ├── historial.js
-│   ├── perfil.js
-│   ├── analisis.js       (riesgo y patrones)
-│   ├── reporte-pdf.js    (genera el reporte PDF)
-│   ├── recordatorios.js  (programación, notificaciones, .ics)
-│   └── vendor/           (jsPDF + AutoTable, MIT; sin depender de CDN)
-├── sw.js                 (Service Worker: muestra notificaciones)
-├── manifest.webmanifest  (permite instalar la app en el celular)
-└── assets/img/
-    ├── logo.png          (logo recortado y con fondo transparente, 512px)
-    ├── logo-256.png
-    ├── logo-icon.png     (192px, para usar en tarjetas pequeñas)
-    ├── logo-96.png
-    ├── favicon-64.png
-    └── favicon-32.png    (favicon del sitio)
+```bash
+cd Backend_Laravel
+php artisan test      # 104 pruebas automáticas sobre una base SQLite en memoria
 ```
 
-## Mapeo con el Product Backlog del informe
+## Cómo trabajamos
 
-| Historia de usuario | Dónde está implementada |
+Usamos **ramas por tarea** (`feature/…`, `fix/…`, `docs/…`) que entran a `main` por **pull request**, los
+pendientes se manejan como **issues** y se siguen en el **tablero del proyecto** (pestaña *Projects*).
+Cada entrega importante tiene su **versión** (`v1.0.0`, `v1.1.0`…) con su *release* y su entrada en el
+[CHANGELOG](CHANGELOG.md). Las reglas completas están en [CONTRIBUTING.md](CONTRIBUTING.md) y en
+[docs/gestion-del-proyecto.md](docs/gestion-del-proyecto.md).
+
+## Equipo "Los Backyardigans"
+
+| Integrante | GitHub |
 |---|---|
-| HU-01 Registrar usuario | `register.html` |
-| HU-02 Iniciar sesión | `login.html` |
-| HU-03 Configurar info personal/médica | `onboarding.html` (9 pasos) |
-| HU-04 Registrar síntomas prodrómicos | `registro.html` (pestaña 1) |
-| HU-05 Registrar migraña (dolor, duración, horario, síntomas) | `registro.html` (pestaña 2) |
-| HU-06 Mostrar síntomas y episodios registrados | `historial.html` |
-| HU-07 Panel de información de síntomas prodrómicos | `dashboard.html` (tarjeta de predicción + síntomas recientes) |
-| HU-08 Notificaciones preventivas | Banner "Detectar señales" + tarjeta de riesgo en `dashboard.html` |
-| HU-09 Recordatorios diarios | `js/recordatorios.js` (lógica), `perfil.html` (hora/día), `dashboard.html` (toggles + aviso), `sw.js` (notificaciones) |
-| HU-10 Generar reporte | Botón de reporte en `historial.html` → PDF con `js/reporte-pdf.js` |
-| HU-11 Editar perfil | `perfil.html` |
-| HU-12 Cerrar sesión | Botón en `perfil.html` |
+| Ariel Acarapi | [@ArielAcarapi](https://github.com/ArielAcarapi) |
+| Ivo Avendaño | [@IvoIsmael](https://github.com/IvoIsmael) |
+| Juan Miguel Huanca | [@miguelhuanca676-bot](https://github.com/miguelhuanca676-bot) |
+| José Mario Macuchapi | [@jose-14-mvj](https://github.com/jose-14-mvj) |
+| Mijhail Vichini | — |
 
-## Siguientes pasos sugeridos para el equipo
+**Materia:** Proyecto de Sistemas I · **Docente:** Georgina Aruquipa Gutiérrez
 
-- Conectar los formularios a la base de datos real (reemplazar
-  `localStorage` por llamadas a la API/backend de Ariel y José Miguel).
-- Implementar el modelo predictivo real detrás del botón
-  "Detectar señales de migraña" (hoy es una simulación basada en la
-  cantidad de registros recientes).
-- Web Push con backend para avisar con la app totalmente cerrada (ver
-  "Recordatorios"). `sw.js` ya trae el manejador `push`.
-- Revisión de accesibilidad (contraste, navegación por teclado) antes
-  de la entrega final.
+## Aviso importante
 
-## Reporte en PDF
-
-`historial.html` → botón del calendario (arriba a la derecha) → elegir
-periodo → **Descargar PDF**. Se genera en el navegador (ningún dato sale
-del dispositivo) con `js/reporte-pdf.js`. Contiene: datos del paciente,
-resumen del periodo, gráficos (episodios por semana/mes e intensidad),
-patrones detectados (usa `MSAnalisis`), desencadenantes y síntomas más
-frecuentes, perfil del cuestionario, tabla completa de registros y un
-espacio para observaciones del médico. Las librerías se cargan solo al
-abrir el reporte. En celulares con "Compartir" del sistema aparece
-también el botón **Compartir…**.
-
-## Recordatorios
-
-Configuración en `perfil.html → Recordatorios` (hora del aviso diario, día
-y hora del resumen semanal). Qué hace cada capa:
-
-| Capa | Funciona con la app… | Requiere |
-|---|---|---|
-| Aviso dentro de la app (banner: *Registrar ahora / En 1 hora / ×*) | abierta | nada |
-| Notificación del dispositivo | abierta, en segundo plano o instalada | permiso del navegador; `https` o `localhost` |
-| Calendario `.ics` (**Añadir a mi calendario**) | **cerrada** | importar el archivo una vez |
-| Web Push (pendiente) | cerrada | backend con claves VAPID |
-
-Detalles: el aviso diario no se muestra si ya registraste algo hoy; el
-mensaje cambia según el riesgo estimado; el banner se puede posponer 1 h;
-la notificación del sistema se envía una sola vez al día. En iPhone, las
-notificaciones solo existen si la app se instala en la pantalla de inicio
-(iOS 16.4+). El Service Worker exige `https` o `localhost`
-(`python3 -m http.server 8000` funciona; abrir con `file://` no).
+MigraSense es un proyecto académico. La predicción es una **estimación orientativa** hecha con datos
+registrados por la propia persona y un modelo entrenado con datos simulados a partir de literatura médica;
+**no es un diagnóstico** y no reemplaza la consulta con un profesional de salud.

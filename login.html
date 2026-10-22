@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" href="assets/img/favicon-32.png">
 <link rel="manifest" href="manifest.webmanifest">
-<meta name="theme-color" content="#4a5c82">
+<meta name="theme-color" content="#f2f4f7" media="(prefers-color-scheme: light)"><meta name="theme-color" content="#11151b" media="(prefers-color-scheme: dark)">
 <link rel="stylesheet" href="css/style.css">
 <script>
 (function(){
@@ -37,7 +37,7 @@
     <div class="auth-illustration">
       <img src="assets/img/auth-shield.png" alt="">
     </div>
-    <h2>Bienvenido/a de nuevo</h2>
+    <h2>Bienvenido a MigraSense</h2>
     <p>Inicia sesión para seguir registrando tus síntomas y anticiparte a tus próximas migrañas.</p>
   </div>
 
@@ -47,7 +47,7 @@
       <div class="brand-name">Migra<span>Sense</span></div>
     </div>
 
-    <h2 style="font-size:1.3rem; margin-bottom:4px;">Bienvenido/a de nuevo</h2>
+    <h2 style="font-size:1.3rem; margin-bottom:4px;">Bienvenido a MigraSense</h2>
     <p class="muted small" style="margin-bottom:22px;">Inicia sesión para seguir registrando tus síntomas.</p>
 
     <form id="loginForm" novalidate>
@@ -76,7 +76,7 @@
         <label style="display:flex; align-items:center; gap:8px; margin:0;">
           <input type="checkbox" id="remember"> Recordarme
         </label>
-        <a href="#" id="forgotLink" class="small" style="color:var(--accent-strong); font-weight:700;">¿Olvidaste tu contraseña?</a>
+        <a href="recuperar.html" id="forgotLink" class="small" style="color:var(--accent-strong); font-weight:700;">¿Olvidaste tu contraseña?</a>
       </div>
 
       <button type="submit" class="btn btn-primary">Iniciar sesión</button>
@@ -87,6 +87,8 @@
 </div>
 
 <script src="js/app.js"></script>
+<script src="js/preguntas.js"></script>
+<script src="js/api.js"></script>
 <script src="js/auth.js"></script>
 </body>
 </html>
