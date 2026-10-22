@@ -141,7 +141,7 @@ Cada entrega importante tiene su **versión** (`v1.0.0`, `v1.1.0`…) con su *re
 | Ivo Avendaño | [@IvoIsmael](https://github.com/IvoIsmael) |
 | Juan Miguel Huanca | [@miguelhuanca676-bot](https://github.com/miguelhuanca676-bot) |
 | José Mario Macuchapi | [@jose-14-mvj](https://github.com/jose-14-mvj) |
-| Mijhail Vichini | — |
+| Mijhail Vichini | [@mijhailvichini1-lab](https://github.com/mijhailvichini1-lab) |
 
 **Materia:** Proyecto de Sistemas I · **Docente:** Georgina Aruquipa Gutiérrez
 
