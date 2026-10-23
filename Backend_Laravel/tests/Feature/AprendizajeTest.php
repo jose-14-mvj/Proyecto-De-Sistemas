@@ -261,4 +261,47 @@ class AprendizajeTest extends TestCase
         $this->assertStringNotContainsString($u->correo, $html);
         @unlink(storage_path('app/panel_ml.html'));
     }
+
+    public function test_el_panel_explica_fiabilidad_y_datos_en_palabras_simples(): void
+    {
+        $this->modeloActivo('2.0.0-r1');
+        $rep = [
+            'version' => '2.0.0-r1', 'entrenado' => '2026-10-20T10:00:00', 'horizonte_horas' => 48,
+            'datos' => ['pacientes_simulados' => 200, 'filas_simuladas' => 17888, 'pacientes_reales' => 4, 'filas_reales' => 103],
+            'prueba_personas_nuevas' => [
+                'modelo' => ['casos' => 4969, 'tasa_real' => 0.421, 'auc' => 0.883],
+                'referencia_solo_cuestionario' => ['auc' => 0.81],
+                'calibracion' => [['rango' => '0-10%', 'casos' => 100, 'prob_media' => 0.05, 'real' => 0.04]],
+                'alertas' => [['umbral' => 0.7, 'alertas' => 10, 'aciertos_%' => 85.4, 'migranas_avisadas_%' => 57.0]],
+            ],
+            'prueba_datos_reales' => 'Aún no hay suficientes datos reales.',
+        ];
+        Http::fake([
+            self::ML.'/salud' => Http::response(['version' => '2.0.0-r1', 'aprendido_con_usuarios' => true]),
+            self::ML.'/metricas' => Http::response($rep),
+        ]);
+        $this->artisan('migrasense:panel-ml --no-abrir')
+            ->expectsOutputToContain('Fiabilidad buena: 88 de 100 puntos')
+            ->expectsOutputToContain('Entrenado con 17.991 momentos')
+            ->assertSuccessful();
+
+        $html = file_get_contents(storage_path('app/panel_ml.html'));
+        $this->assertStringContainsString('¿Qué tan confiable es hoy?', $html);
+        $this->assertStringContainsString('¿Con cuántos datos se entrenó?', $html);
+        $this->assertStringContainsString('17.888 momentos', $html);
+        $this->assertStringContainsString('faltan 1 persona(s) más', $html);
+        $this->assertStringContainsString('acierta 85 de cada 100', $html);
+        @unlink(storage_path('app/panel_ml.html'));
+    }
+
+    public function test_la_traduccion_de_fiabilidad_funciona_con_reportes_incompletos(): void
+    {
+        $r = \App\Support\FiabilidadMl::resumen([]);
+        $this->assertSame('sin evaluar', $r['nota']);
+        $this->assertSame(0, $r['datos']['momentos_total']);
+        $r = \App\Support\FiabilidadMl::resumen(['prueba_personas_nuevas' => ['modelo' => ['auc' => 0.65]],
+            'prueba_datos_reales' => ['personas_de_prueba' => 5, 'modelo_con_datos_reales' => ['auc' => 0.9]]]);
+        $this->assertSame('débil', $r['nota']);
+        $this->assertTrue($r['reales']['medido']);
+    }
 }

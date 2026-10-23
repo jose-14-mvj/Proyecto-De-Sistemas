@@ -58,25 +58,23 @@ class PanelMlHtml
         }
         $ultimo = $hist ? end($hist) : null;
 
-        $html = '<header><div><h1>Aprendizaje del ML</h1><p class="sub">MigraSense · panel local, solo para ti · '
-            .self::e($d['generado']).'</p></div></header>';
+        $html = '<header><h1>¿Qué tan confiable es el ML de MigraSense?</h1><p class="sub">Panel local, solo para ti · generado el '
+            .self::e($d['generado']).' · predice si habrá migraña en las próximas '.(int) ($met['horizonte_horas'] ?? 48).' horas</p></header>';
 
         if (! empty($d['aviso_ml'])) {
-            $html .= '<div class="aviso">'.self::e(rtrim($d['aviso_ml'], '. ')).'. Las secciones del ML quedan vacías; lo de la base de datos sí está.</div>';
+            $html .= '<div class="aviso">'.self::e(rtrim($d['aviso_ml'], '. ')).'. '
+                .($met ? 'Se muestra lo guardado en Aiven del modelo en uso.' : 'Las secciones del modelo quedan vacías; lo de la base de datos sí está.').'</div>';
         }
 
-        // ---------- Resumen ----------
-        $aprendio = $salud ? ! empty($salud['aprendido_con_usuarios']) : ($activo !== null);
-        $html .= '<section class="kpis">'
-            .self::kpi('Modelo en uso', $salud['version'] ?? ($activo['version'] ?? '2.0.0'),
-                $aprendio ? 'Aprendido con tus compañeros' : 'Modelo base (libros)', $aprendio ? 'ok' : 'neutro')
-            .self::kpi('Acierto (AUC)', isset($salud['auc_personas_nuevas']) ? self::num($salud['auc_personas_nuevas']) : ($activo ? self::num($activo['auc']) : '—'),
-                '0,5 = azar · 1 = perfecto')
-            .self::kpi('Entrenamientos', (string) count($hist),
-                self::contar($hist, 'activo') + self::contar($hist, 'reemplazado').' aceptados · '.self::contar($hist, 'rechazado').' rechazados')
-            .self::kpi('Personas reales usadas', (string) ($salud['pacientes_reales_usados'] ?? ($activo['pacientes_reales'] ?? 0)),
-                'de '.($c['personas_datos'] ?? 0).' con datos hoy')
-            .'</section>';
+        // ---------- 1) Fiabilidad y 2) datos de entrenamiento ----------
+        if ($met) {
+            $res = FiabilidadMl::resumen($met);
+            $aprendio = $salud ? ! empty($salud['aprendido_con_usuarios']) : ($activo !== null);
+            $html .= self::seccionFiabilidad($res, $met, $aprendio, $salud['version'] ?? ($activo['version'] ?? ($met['version'] ?? '—')));
+            $html .= self::seccionDatosEntrenamiento($res['datos'], $c);
+        } else {
+            $html .= '<section><h2>Fiabilidad</h2><p class="vacio">No hay métricas: el ML no respondió y Aiven todavía no tiene guardado lo aprendido.</p></section>';
+        }
 
         // ---------- Próximo aprendizaje ----------
         $total = (int) ($c['total'] ?? 0);
@@ -99,7 +97,7 @@ class PanelMlHtml
                 $okHoras ? null : self::horas($r['horas'] - $horasPasadas).' de espera',
             ])).'.';
         }
-        $html .= '<section><h2>¿Cuándo vuelve a aprender?</h2><p class="nota">Aprende solo cuando se cumplen las dos condiciones y alguien abre el dashboard.</p>'
+        $html .= '<section><h2>3. ¿Cuándo vuelve a aprender?</h2><p class="nota">Aprende solo cuando se cumplen las dos condiciones y alguien abre el dashboard.</p>'
             .self::progreso('Registros nuevos desde el último entrenamiento', $nuevos, $r['minimo'], $nuevos.' de '.$r['minimo'])
             .self::progreso('Horas desde el último entrenamiento', $horasPasadas ?? $r['horas'], $r['horas'],
                 $horasPasadas === null ? 'nunca entrenó' : self::horas($horasPasadas).' de '.$r['horas'].' h')
@@ -108,7 +106,7 @@ class PanelMlHtml
         // ---------- Datos ----------
         $act = $d['actividad'] ?? [];
         $sum30 = array_sum(array_map(fn ($x) => $x['registros'] + $x['episodios'], $act));
-        $html .= '<section><h2>Datos que tus compañeros cargaron</h2><div class="mini">'
+        $html .= '<section><h2>4. Lo que cargaron en la app</h2><p class="nota">Todo lo que hay hoy en Aiven (personas de verdad). Es la materia prima del próximo entrenamiento.</p><div class="mini">'
             .self::dato('Usuarios', $c['usuarios'] ?? 0, ($c['usuarios_demo'] ?? 0) ? ($c['usuarios_demo'].' son de demostración') : '')
             .self::dato('Con datos', $c['personas_datos'] ?? 0, 'personas que anotaron algo')
             .self::dato('Síntomas', $c['registros'] ?? 0)
@@ -117,23 +115,26 @@ class PanelMlHtml
             .self::actividad($act).'</section>';
 
         // ---------- Historial ----------
-        $html .= '<section><h2>Historial de entrenamientos</h2>';
+        $html .= '<section><h2>5. Historial de entrenamientos</h2><p class="nota">Cada vez que el ML intenta aprender. Solo se activa un modelo nuevo si no es menos confiable que el anterior.</p>';
         if (! $hist) {
             $html .= '<p class="vacio">Todavía no hubo ningún entrenamiento: la app usa el modelo de los libros.</p>';
         } else {
-            $html .= '<h3>Acierto (AUC) de cada entrenamiento</h3>'.self::lineaAuc($hist).self::tablaHistorial($hist);
+            $html .= '<h3>Puntaje de fiabilidad de cada entrenamiento (de 100)</h3>'.self::lineaAuc($hist).self::tablaHistorial($hist);
         }
         $html .= '</section>';
 
-        // ---------- Memoria en Aiven ----------
-        if ($hist) {
-            $html .= self::seccionMemoria($hist);
-        }
-
-        // ---------- Métricas del modelo en uso ----------
+        // ---------- Detalles técnicos (plegados) ----------
+        $tec = '';
         if ($met) {
-            $html .= self::seccionMetricas($met, ! empty($d['metricas_de_aiven']));
+            $tec .= self::seccionMetricas($met, ! empty($d['metricas_de_aiven']));
         }
+        if ($hist) {
+            $tec .= self::seccionMemoria($hist);
+        }
+        if ($tec) {
+            $html .= '<details class="tecnico"><summary>6. Detalles técnicos (para la exposición o el docente)</summary>'.$tec.'</details>';
+        }
+        $html .= self::glosario();
 
         return self::pagina($html);
     }
@@ -166,7 +167,7 @@ class PanelMlHtml
 
     private static function seccionMetricas(array $m, bool $deAiven = false): string
     {
-        $h = '<section><h2>Qué aprendió el modelo en uso</h2>';
+        $h = '<section><h2>Qué aprendió el modelo en uso (detalle)</h2>';
         if ($deAiven) {
             $h .= '<p class="aviso">El ML no respondió: esto se leyó de la memoria guardada en Aiven.</p>';
         }
@@ -194,15 +195,15 @@ class PanelMlHtml
                 ['Modelo de los libros', $pr['modelo_base_estudios']['auc'] ?? null],
                 ['Libros + tus compañeros', $pr['modelo_con_datos_reales']['auc'] ?? null],
             ];
-            $items = array_map(fn ($f) => [$f[0], (float) $f[1], self::num($f[1])], array_filter($filas, fn ($f) => $f[1] !== null));
-            $h .= '<p class="nota">Probado con '.(int) ($pr['personas_de_prueba'] ?? 0).' personas reales que el modelo NO vio al entrenar (AUC: más alto = mejor).</p>'
+            $items = array_map(fn ($f) => [$f[0], (float) $f[1], self::p100($f[1])], array_filter($filas, fn ($f) => $f[1] !== null));
+            $h .= '<p class="nota">Probado con '.(int) ($pr['personas_de_prueba'] ?? 0).' personas reales que el modelo NO vio al entrenar (puntaje de 100: más alto = mejor).</p>'
                 .self::barras(array_values($items), 1.0);
             $base = $pr['modelo_base_estudios']['auc'] ?? null;
             $real = $pr['modelo_con_datos_reales']['auc'] ?? null;
             if ($base !== null && $real !== null) {
                 $dif = $real - $base;
-                $h .= '<p class="estado">'.($dif > 0.005 ? 'Sí: con sus datos acierta mejor (+'.self::num($dif).').'
-                    : ($dif < -0.005 ? 'Por ahora no: acierta un poco peor ('.self::num($dif).'). Hacen falta más datos.' : 'Por ahora acierta igual. Hacen falta más datos.')).'</p>';
+                $h .= '<p class="estado">'.($dif > 0.005 ? 'Sí: con sus datos es más confiable (+'.round($dif * 100).' puntos).'
+                    : ($dif < -0.005 ? 'Por ahora no: queda un poco por debajo ('.round($dif * 100).' puntos). Hacen falta más datos.' : 'Por ahora acierta igual. Hacen falta más datos.')).'</p>';
             }
         } else {
             $h .= '<p class="vacio">'.self::e(is_string($pr) ? $pr : 'Sin datos todavía.').'</p>';
@@ -234,7 +235,7 @@ class PanelMlHtml
                 ['Modelo lineal simple', $prueba['referencia_lineal']['auc'] ?? null],
                 ['Este modelo', $prueba['modelo']['auc'] ?? null],
             ];
-            $items = array_map(fn ($f) => [$f[0], (float) $f[1], self::num($f[1])], array_filter($refs, fn ($f) => $f[1] !== null));
+            $items = array_map(fn ($f) => [$f[0], (float) $f[1], self::p100($f[1])], array_filter($refs, fn ($f) => $f[1] !== null));
             $h .= '<h3>Comparado con métodos más simples</h3><p class="nota">Probado con '.(int) ($prueba['modelo']['casos'] ?? 0).' momentos de personas nuevas.</p>'
                 .self::barras(array_values($items), 1.0);
         }
@@ -242,13 +243,110 @@ class PanelMlHtml
         return $h.'</section>';
     }
 
+    // =====================================================================
+    // 1) Fiabilidad · 2) Datos de entrenamiento · Glosario
+    // =====================================================================
+    private static function seccionFiabilidad(array $r, array $met, bool $aprendio, string $version): string
+    {
+        $p = $r['puntaje'];
+        $ang = $p === null ? 0 : max(0, min(100, $p));
+        $h = '<section class="hero s-'.self::e($r['semaforo']).'"><h2>1. ¿Qué tan confiable es hoy?</h2>'
+            .'<div class="hero-fila"><div class="medidor" style="--p:'.$ang.'"><div><b>'.($p ?? '—').'</b><span>de 100</span></div></div>'
+            .'<div class="hero-txt"><p class="titular">Fiabilidad <span class="nota-g">'.self::e($r['nota']).'</span></p>'
+            .'<p class="nota">Escala: 50 = adivinar al azar · 70 aceptable · 80 buena · 90 excelente · 100 perfecto.</p>'
+            .'<p class="modelo">Modelo en uso: <code>'.self::e($version).'</code> · '
+            .($aprendio ? '<span class="bien">ya aprendió con datos de la app</span>' : 'modelo base (libros), todavía sin aprender de la app')
+            .' · entrenado el '.self::e(self::fecha(str_replace('T', ' ', (string) ($met['entrenado'] ?? '')))).'</p></div></div>';
+
+        if ($r['puntos']) {
+            $h .= '<h3>En palabras simples</h3><ul class="puntos">';
+            foreach ($r['puntos'] as $x) {
+                $h .= '<li>'.self::e($x).'</li>';
+            }
+            $h .= '</ul>';
+        }
+
+        // Prueba con personas reales
+        $re = $r['reales'];
+        $d = $r['datos'];
+        $h .= '<h3>¿Y con personas reales de la app?</h3>';
+        if ($re['medido']) {
+            $h .= '<p class="estado bien-fondo">'.self::e($re['frase']).'</p>';
+        } else {
+            $h .= '<p class="nota">Para medir la fiabilidad con gente real, el sistema necesita al menos '.FiabilidadMl::MIN_PERSONAS_REALES
+                .' personas y '.FiabilidadMl::MIN_MOMENTOS_REALES.' momentos con 48 h de seguimiento. Así va:</p>'
+                .self::progreso('Personas reales con datos', $d['personas_reales'], FiabilidadMl::MIN_PERSONAS_REALES,
+                    $d['personas_reales'].' de '.FiabilidadMl::MIN_PERSONAS_REALES)
+                .self::progreso('Momentos reales evaluables', $d['momentos_reales'], FiabilidadMl::MIN_MOMENTOS_REALES,
+                    $d['momentos_reales'].' de '.FiabilidadMl::MIN_MOMENTOS_REALES)
+                .'<p class="estado">'.self::e($re['frase']).'</p>';
+        }
+        return $h.'<p class="advertencia">⚠ La fiabilidad de arriba se midió con pacientes simulados a partir de estudios médicos: es una estimación. '
+            .'La fiabilidad real con usuarios se conocerá cuando haya suficientes datos reales. No reemplaza la opinión de un médico.</p></section>';
+    }
+
+    private static function seccionDatosEntrenamiento(array $d, array $c): string
+    {
+        $tot = max(1, $d['momentos_simulados'] + $d['momentos_reales']);
+        $pReal = $d['momentos_reales'] > 0 ? max(1.5, $d['momentos_reales'] / $tot * 100) : 0;
+        $h = '<section><h2>2. ¿Con cuántos datos se entrenó?</h2>'
+            .'<p class="nota">Un <b>momento</b> es una «foto» de una persona en un día y hora: lo que había anotado hasta ese instante, '
+            .'más la respuesta (si tuvo o no migraña en las 48 h siguientes). El modelo aprende comparando miles de esas fotos.</p>'
+            .'<div class="grande">'.self::miles($d['momentos_total']).' <span>momentos en total</span></div>'
+            .'<div class="apilada" role="img" aria-label="Proporción de datos simulados y reales">'
+            .'<span class="sim" style="width:'.round(100 - $pReal, 2).'%"></span>'
+            .($pReal ? '<span class="real" style="width:'.round($pReal, 2).'%"></span>' : '').'</div>'
+            .'<div class="leyenda"><span><i class="s2"></i>Simulados (libros): '.self::num(100 - $d['porcentaje_real'], 1).' %</span>'
+            .'<span><i class="ok"></i>Reales (la app): '.self::num($d['porcentaje_real'], 1).' %</span></div>'
+            .'<div class="mini">'
+            .self::dato('Pacientes simulados', self::miles($d['pacientes_simulados']), self::miles($d['momentos_simulados']).' momentos · creados con datos de estudios médicos')
+            .self::dato('Personas reales', $d['personas_reales'], self::miles($d['momentos_reales']).' momentos · usuarios de MigraSense, sin nombre ni correo')
+            .self::dato('Apartados para la prueba', $d['personas_prueba'].' pacientes', self::miles($d['momentos_prueba']).' momentos que el modelo nunca vio al aprender')
+            .'</div>';
+        if ($d['migranas_pct'] !== null) {
+            $h .= '<p class="nota">De todos los momentos, en el '.self::num($d['migranas_pct'], 1).' % hubo migraña en las 48 h siguientes.</p>';
+        }
+        $h .= '<p class="estado">Cómo se usan: primero se apartan las personas de prueba y se mide la fiabilidad con ellas (por eso es honesta). '
+            .'Después, el modelo final se entrena con <b>todos</b> los momentos. Los datos reales pesan 3 veces más que los simulados.</p>';
+
+        $regBd = (int) ($c['total'] ?? 0);
+        if ($regBd) {
+            $h .= '<p class="nota">¿Por qué los momentos reales no coinciden con los '.self::miles($regBd).' registros que hay hoy en Aiven? '
+                .'Porque solo cuentan los anotados antes del último entrenamiento y que ya tienen 48 h de seguimiento '
+                .'(si no, todavía no se sabe la respuesta).</p>';
+        }
+        return $h.'</section>';
+    }
+
+    private static function glosario(): string
+    {
+        $t = [
+            ['Fiabilidad (AUC)', 'Qué tan bien distingue un momento de riesgo de uno tranquilo. 50 = azar, 100 = perfecto. Técnicamente es el AUC multiplicado por 100.'],
+            ['Momento', 'Foto de una persona en un día y hora con lo que había anotado, más si tuvo migraña en las 48 h siguientes.'],
+            ['Paciente simulado', 'Persona inventada por computadora siguiendo lo que dicen los estudios médicos (frecuencia, síntomas previos, desencadenantes). Sirve para que el ML funcione desde el primer día.'],
+            ['Calibración', 'Si el porcentaje que muestra es realista: cuando dice 60 %, ¿pasa más o menos 6 de cada 10 veces?'],
+            ['Prueba con personas nuevas', 'Se mide con pacientes que el modelo nunca vio, para no hacer trampa.'],
+            ['Reentrenamiento', 'Volver a aprender sumando los datos nuevos de la app. Solo se acepta si no queda menos confiable.'],
+        ];
+        $h = '<details class="tecnico"><summary>¿Qué significa cada palabra? (glosario)</summary><section><dl class="glosario">';
+        foreach ($t as [$a, $b]) {
+            $h .= '<dt>'.self::e($a).'</dt><dd>'.self::e($b).'</dd>';
+        }
+        return $h.'</dl></section></details>';
+    }
+
+    private static function miles($n): string
+    {
+        return number_format((float) $n, 0, ',', '.');
+    }
+
     private static function tablaHistorial(array $hist): string
     {
-        $h = '<table><thead><tr><th>#</th><th>Inicio</th><th>Estado</th><th>AUC</th><th>Antes</th><th>Personas</th><th>Datos</th><th>Motivo</th></tr></thead><tbody>';
+        $h = '<table><thead><tr><th>#</th><th>Cuándo</th><th>Resultado</th><th>Puntaje</th><th>El anterior</th><th>Personas reales</th><th>Registros en la BD</th><th>Por qué</th></tr></thead><tbody>';
         foreach (array_reverse($hist) as $f) {
             $h .= '<tr><td>'.(int) $f['id_modelo'].'</td><td class="nw">'.self::e(self::fecha($f['fecha_inicio'])).'</td>'
                 .'<td><span class="chip '.self::e($f['estado']).'">'.self::e(self::estado($f['estado'])).'</span></td>'
-                .'<td>'.self::num($f['auc']).'</td><td>'.self::num($f['auc_anterior']).'</td>'
+                .'<td><b>'.self::p100($f['auc']).'</b></td><td>'.self::p100($f['auc_anterior']).'</td>'
                 .'<td>'.self::e((string) ($f['pacientes_reales'] ?? '—')).'</td><td>'.self::e((string) ($f['registros_usados'] ?? '—')).'</td>'
                 .'<td class="motivo">'.self::e((string) ($f['motivo'] ?? '')).'</td></tr>';
         }
@@ -338,12 +436,12 @@ class PanelMlHtml
         $svg = '<svg viewBox="0 0 '.$w.' '.$alto.'" class="grafico" role="img" aria-label="AUC por entrenamiento">';
         foreach ([$min, ($min + $max) / 2, $max] as $g) {
             $svg .= '<line x1="'.$izq.'" x2="'.($w - $der).'" y1="'.round($y($g), 1).'" y2="'.round($y($g), 1).'" class="rejilla"/>'
-                .'<text x="'.($izq - 6).'" y="'.round($y($g) + 4, 1).'" class="tx" text-anchor="end">'.self::num($g).'</text>';
+                .'<text x="'.($izq - 6).'" y="'.round($y($g) + 4, 1).'" class="tx" text-anchor="end">'.self::p100($g).'</text>';
         }
         // Referencia: el modelo base (auc_anterior del primero)
         if ($pts[0]['auc_anterior'] !== null) {
             $yb = round($y((float) $pts[0]['auc_anterior']), 1);
-            $svg .= '<line x1="'.$izq.'" x2="'.($w - $der).'" y1="'.$yb.'" y2="'.$yb.'" class="ref"/><text x="'.($w - $der).'" y="'.($yb - 5).'" class="tx" text-anchor="end">modelo de los libros '.self::num($pts[0]['auc_anterior']).'</text>';
+            $svg .= '<line x1="'.$izq.'" x2="'.($w - $der).'" y1="'.$yb.'" y2="'.$yb.'" class="ref"/><text x="'.($w - $der).'" y="'.($yb - 5).'" class="tx" text-anchor="end">modelo de los libros: '.self::p100($pts[0]['auc_anterior']).'</text>';
         }
         $linea = [];
         foreach ($pts as $i => $f) {
@@ -353,9 +451,9 @@ class PanelMlHtml
             $svg .= '<polyline points="'.implode(' ', $linea).'" class="linea"/>';
         }
         foreach ($pts as $i => $f) {
-            $svg .= '<g><title>'.self::e('#'.$f['id_modelo'].' · '.self::estado($f['estado']).' · AUC '.self::num($f['auc']).' · '.($f['pacientes_reales'] ?? '?').' personas').'</title>'
+            $svg .= '<g><title>'.self::e('#'.$f['id_modelo'].' · '.self::estado($f['estado']).' · '.self::p100($f['auc']).' de 100 · '.($f['pacientes_reales'] ?? '?').' personas').'</title>'
                 .'<circle cx="'.round($x($i), 1).'" cy="'.round($y((float) $f['auc']), 1).'" r="6" class="p '.self::e($f['estado']).'"/></g>'
-                .'<text x="'.round($x($i), 1).'" y="'.($alto - 10).'" class="tx" text-anchor="middle">#'.(int) $f['id_modelo'].' · '.date('d/m', strtotime($f['fecha_inicio'])).'</text>';
+                .'<text x="'.round($x($i), 1).'" y="'.($alto - 10).'" class="tx" text-anchor="'.($n > 1 && $i === $n - 1 ? 'end' : ($n > 1 && $i === 0 ? 'start' : 'middle')).'">#'.(int) $f['id_modelo'].' · '.date('d/m', strtotime($f['fecha_inicio'])).'</text>';
         }
         return $svg.'</svg><div class="leyenda"><span><i class="p activo"></i>En uso</span><span><i class="p reemplazado"></i>Aceptado antes</span><span><i class="p rechazado"></i>Rechazado</span></div>';
     }
@@ -414,6 +512,12 @@ class PanelMlHtml
     {
         return ['activo' => 'En uso', 'reemplazado' => 'Aceptado (antes)', 'rechazado' => 'Rechazado',
             'error' => 'Error', 'en_curso' => 'Entrenando…'][$e] ?? $e;
+    }
+
+    /** AUC 0,883 → "88" (puntaje de 100) */
+    private static function p100($v): string
+    {
+        return $v === null || $v === '' ? '—' : (string) (int) round((float) $v * 100);
     }
 
     private static function num($v, int $dec = 3): string
@@ -476,6 +580,24 @@ td.nw{white-space:nowrap}td.motivo{color:var(--suave);min-width:180px}
 .vacio{color:var(--suave);font-style:italic}
 .bien{color:var(--ok);font-weight:600}.malo{color:var(--mal);font-weight:600}.gris{color:var(--suave)}
 code{font-family:ui-monospace,Consolas,monospace;font-size:12.5px;background:var(--pista);padding:1px 5px;border-radius:4px}
+.hero{border-width:2px}.hero.s-verde{border-color:var(--ok)}.hero.s-amarillo{border-color:#d9a400}.hero.s-rojo{border-color:var(--mal)}
+.hero-fila{display:flex;gap:22px;align-items:center;flex-wrap:wrap;margin-top:8px}
+.medidor{--c:var(--ok);width:132px;height:132px;border-radius:50%;flex:none;display:grid;place-items:center;background:conic-gradient(var(--c) calc(var(--p)*1%),var(--pista) 0)}
+.s-amarillo .medidor{--c:#d9a400}.s-rojo .medidor{--c:var(--mal)}.s-gris .medidor{--c:var(--gris)}
+.medidor>div{width:104px;height:104px;border-radius:50%;background:var(--carta);display:flex;flex-direction:column;align-items:center;justify-content:center}
+.medidor b{font-size:38px;line-height:1}.medidor span{font-size:12px;color:var(--suave)}
+.hero-txt{flex:1;min-width:220px}.titular{font-size:24px;font-weight:700;margin:0}.nota-g{color:var(--ok)}.s-amarillo .nota-g{color:#b38700}.s-rojo .nota-g{color:var(--mal)}
+.modelo{font-size:13.5px;margin:6px 0 0}
+.puntos{margin:6px 0 0;padding-left:20px}.puntos li{margin:6px 0}
+.advertencia{margin:14px 0 0;font-size:13px;color:var(--suave);border-left:3px solid var(--gris);padding:4px 10px}
+.bien-fondo{color:var(--ok)}
+.grande{font-size:30px;font-weight:700;margin:10px 0 6px}.grande span{font-size:15px;font-weight:400;color:var(--suave)}
+.apilada{display:flex;height:16px;border-radius:8px;overflow:hidden;background:var(--pista)}.apilada .sim{background:var(--a2)}.apilada .real{background:var(--ok)}
+.leyenda i.ok{background:var(--ok)}
+details.tecnico{margin:14px 0}details.tecnico>summary{cursor:pointer;font-weight:600;padding:12px 16px;background:var(--carta);border:1px solid var(--borde);border-radius:12px}
+details.tecnico[open]>summary{border-radius:12px 12px 0 0}details.tecnico>section{margin-top:0;border-top:0;border-radius:0 0 12px 12px}
+details.tecnico>section+section{border-radius:12px;margin-top:10px;border-top:1px solid var(--borde)}
+.glosario dt{font-weight:600;margin-top:10px}.glosario dd{margin:2px 0 0;color:var(--suave)}
 .aviso{background:#fff3cd;color:#664d03;border-radius:10px;padding:10px 14px;margin:10px 0}
 @media (max-width:620px){.barras .fila{grid-template-columns:1fr 54px}.barras .et{grid-column:1/-1}table{display:block;overflow-x:auto}}
 </style></head>

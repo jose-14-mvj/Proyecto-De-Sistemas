@@ -89,6 +89,20 @@ class PanelMl extends Command
             }
         }
 
+        if ($datos['metricas']) {
+            $res = \App\Support\FiabilidadMl::resumen($datos['metricas']);
+            $dd = $res['datos'];
+            $this->newLine();
+            $this->line('<options=bold>'.$res['titular'].'</>  (50 = azar · 80 buena · 100 perfecto)');
+            $this->line(sprintf('Entrenado con %s momentos: %s de %s pacientes simulados + %s de %s persona(s) real(es) (%s %% reales).',
+                number_format($dd['momentos_total'], 0, ',', '.'), number_format($dd['momentos_simulados'], 0, ',', '.'),
+                number_format($dd['pacientes_simulados'], 0, ',', '.'), number_format($dd['momentos_reales'], 0, ',', '.'),
+                $dd['personas_reales'], str_replace('.', ',', (string) $dd['porcentaje_real'])));
+            $this->line('Probado con '.number_format($dd['momentos_prueba'], 0, ',', '.').' momentos de '.$dd['personas_prueba'].' pacientes que nunca vio.');
+            $this->line($res['reales']['frase']);
+            $this->newLine();
+        }
+
         $ruta = storage_path('app/panel_ml.html');
         file_put_contents($ruta, PanelMlHtml::generar($datos));
         $this->info('Panel listo: '.$ruta);
