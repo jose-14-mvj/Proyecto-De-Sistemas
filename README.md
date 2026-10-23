@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <a href="https://miguelhuanca676-bot.github.io/migrasense/"><strong>Abrir la aplicación</strong></a> ·
+  <a href="https://migrasense.pages.dev/"><strong>Abrir la aplicación</strong></a> ·
   <a href="docs/manual-de-usuario.md">Manual de usuario</a> ·
   <a href="docs/README.md">Documentación técnica</a> ·
   <a href="CHANGELOG.md">Versiones</a>
@@ -58,7 +58,7 @@ Son tres piezas que se hablan por internet:
 
 ```mermaid
 flowchart LR
-    U([Persona usuaria<br>celular o PC]) --> F[Frontend<br>HTML · CSS · JS<br>GitHub Pages]
+    U([Persona usuaria<br>celular o PC]) --> F[Frontend<br>HTML · CSS · JS<br>Cloudflare Pages]
     F -- "API REST + token" --> B[Backend<br>Laravel 9 · PHP 8.2<br>Render]
     B -- "SQL con TLS" --> D[(MySQL 8.4<br>Aiven)]
     B -- "datos anónimos" --> M[Servicio de ML<br>Python · FastAPI<br>Render]
@@ -68,7 +68,7 @@ flowchart LR
 
 | Parte | Tecnología | Dónde vive |
 |---|---|---|
-| Frontend | HTML, CSS y JavaScript sin frameworks (PWA) | `/` (raíz de este repo) · publicado en GitHub Pages |
+| Frontend | HTML, CSS y JavaScript sin frameworks (PWA) | `/` (raíz de este repo) · publicado en Cloudflare Pages |
 | Backend / API | Laravel 9, Sanctum, Argon2id | [`Backend_Laravel/`](Backend_Laravel) · Render (Docker) |
 | Base de datos | MySQL 8.4: 23 tablas, 6 vistas, 11 procedimientos, 5 triggers | [`database/`](database) y `Backend_Laravel/database` · Aiven |
 | Machine learning | Python, scikit-learn, FastAPI | repo [migrasence-ml](https://github.com/miguelhuanca676-bot/migrasence-ml) · Render |
@@ -93,7 +93,7 @@ Proyecto-De-Sistemas/
 
 ## Probarlo en tu computadora
 
-Lo más rápido es usar la [versión publicada](https://miguelhuanca676-bot.github.io/migrasense/). Si quieres
+Lo más rápido es usar la [versión publicada](https://migrasense.pages.dev/). Si quieres
 levantarlo localmente necesitas **PHP 8.2**, **Composer** y **MySQL 8** (XAMPP sirve):
 
 ```bash

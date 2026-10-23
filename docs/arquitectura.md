@@ -13,7 +13,7 @@ flowchart TB
         M[Servicio ML<br>FastAPI · scikit-learn]
     end
     D[(Aiven<br>MySQL 8.4)]
-    G[GitHub Pages]
+    G[Cloudflare Pages<br>respaldo: GitHub Pages]
     CJ[cron-job.org]
     CO[Gmail Apps Script / Brevo]
     PS[Servicios push<br>FCM · Mozilla · Apple]
@@ -35,7 +35,7 @@ flowchart TB
   "despertando" y mantiene una copia de los datos en el navegador para que la app siga mostrando algo si
   se corta el internet.
 - `sw.js` (service worker) recibe las notificaciones push aunque la app esté cerrada.
-- Se publica tal cual en **GitHub Pages**.
+- Se publica tal cual en **Cloudflare Pages** (https://migrasense.pages.dev), con GitHub Pages como respaldo.
 
 ## Backend (API)
 

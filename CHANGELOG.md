@@ -4,6 +4,14 @@ Todas las versiones de MigraSense, de la más nueva a la más antigua. Usamos
 [versionado semántico](https://semver.org/lang/es/): `MAYOR.MENOR.PARCHE`.
 Cada versión tiene su etiqueta (`git tag`) y su *release* en GitHub.
 
+## [Sin publicar]
+
+### Cambiado
+- La app ahora se publica en **Cloudflare Pages**: https://migrasense.pages.dev. La dirección de GitHub Pages
+  sigue funcionando como respaldo.
+- Render: `CORS_ALLOWED_ORIGINS` acepta las dos direcciones y `FRONTEND_URL` apunta a la nueva (los enlaces
+  de los correos llevan a Cloudflare Pages).
+
 ## [1.6.0] — 2026-10-21 · Repositorio oficial y documentación
 
 ### Agregado
