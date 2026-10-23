@@ -2,7 +2,8 @@
 
 | Servicio | Plataforma | Dirección | Se actualiza |
 |---|---|---|---|
-| Frontend | GitHub Pages | https://miguelhuanca676-bot.github.io/migrasense/ | Al hacer push a `main` del repo del frontend |
+| Frontend | Cloudflare Pages | https://migrasense.pages.dev/ | Al hacer push a `main` del repo del frontend (automático) |
+| Frontend (respaldo) | GitHub Pages | https://miguelhuanca676-bot.github.io/migrasense/ | Igual, con el mismo push |
 | API | Render (Docker) | https://migrasence-api.onrender.com/api | Al hacer push a `main` (Auto-Deploy) o con *Manual Deploy* |
 | Machine learning | Render (Docker) | https://migrasence-ml.onrender.com | Al hacer push al repo `migrasence-ml` |
 | Base de datos | Aiven (MySQL 8.4) | privado | Con migraciones (ver abajo) |
@@ -20,6 +21,27 @@ Este orden evita que la app pida algo que el servidor todavía no sabe hacer:
    `Unauthenticated` (y no 404), ya está publicada.
 4. Subir el frontend.
 5. Probar en la página publicada con **Ctrl+F5**.
+
+## Cloudflare Pages: configuración del frontend
+
+- Proyecto **migrasense** en Cloudflare (Workers & Pages → Pages), conectado al repo
+  `miguelhuanca676-bot/migrasense`, rama `main`.
+- Sin paso de compilación: *Framework preset* **None**, *Build command* vacío, *Build output directory* vacío
+  (se publica la raíz del repo tal cual).
+- Cada `git push` a `main` publica solo en 1–2 minutos. El historial está en Cloudflare → proyecto → *Deployments*.
+- GitHub Pages sigue activo con el mismo repo, como dirección de respaldo.
+
+### Si se cambia o agrega una dirección del frontend
+
+La API solo acepta llamadas de las direcciones que conoce. En Render (`migrasence-api` → *Environment*):
+
+- `CORS_ALLOWED_ORIGINS`: todas las direcciones separadas por comas, sin `/` al final. Hoy:
+  `https://miguelhuanca676-bot.github.io,https://migrasense.pages.dev`
+- `FRONTEND_URL`: la dirección principal (se usa en los botones de los correos): `https://migrasense.pages.dev`
+
+Si falta la dirección en `CORS_ALLOWED_ORIGINS`, la página abre pero no puede iniciar sesión. Cada persona debe
+iniciar sesión y aceptar las notificaciones de nuevo en una dirección nueva (el navegador guarda la sesión y
+las notificaciones por dirección).
 
 ## Render: configuración de la API
 

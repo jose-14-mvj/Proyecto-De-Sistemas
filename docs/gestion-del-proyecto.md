@@ -8,7 +8,7 @@ día están en [CONTRIBUTING.md](../CONTRIBUTING.md).
 | Repositorio | Contenido | Rol |
 |---|---|---|
 | [jose-14-mvj/Proyecto-De-Sistemas](https://github.com/jose-14-mvj/Proyecto-De-Sistemas) | Frontend, backend Laravel, scripts SQL y documentación | **Repositorio oficial** del proyecto |
-| [miguelhuanca676-bot/migrasense](https://github.com/miguelhuanca676-bot/migrasense) | Copia del frontend publicada en GitHub Pages | Publicación |
+| [miguelhuanca676-bot/migrasense](https://github.com/miguelhuanca676-bot/migrasense) | Copia del frontend publicada en Cloudflare Pages (y GitHub Pages como respaldo) | Publicación |
 | [miguelhuanca676-bot/migrasence-ml](https://github.com/miguelhuanca676-bot/migrasence-ml) | Servicio de machine learning | Servicio aparte (otro lenguaje y otro despliegue) |
 
 ## Cómo evolucionó el proyecto

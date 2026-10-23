@@ -3,7 +3,8 @@
 Este manual explica cómo usar MigraSense paso a paso. Las capturas son de un celular, pero en una tablet o
 en la computadora las pantallas son las mismas (en la PC el menú aparece a la izquierda en lugar de abajo).
 
-**Dirección de la app:** https://miguelhuanca676-bot.github.io/migrasense/
+**Dirección de la app:** https://migrasense.pages.dev/
+(también funciona la dirección anterior, https://miguelhuanca676-bot.github.io/migrasense/, como respaldo)
 
 > La primera vez que abres la app en el día puede aparecer "Conectando con el servidor… la primera vez puede
 > tardar hasta 1 minuto". Es normal: el servidor gratuito se "duerme" cuando nadie lo usa. Espera un momento
