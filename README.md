@@ -16,6 +16,10 @@
   <a href="CHANGELOG.md">Versiones</a>
 </p>
 
+<p align="center">
+  <a href="https://github.com/jose-14-mvj/Proyecto-De-Sistemas/actions/workflows/pruebas.yml"><img src="https://github.com/jose-14-mvj/Proyecto-De-Sistemas/actions/workflows/pruebas.yml/badge.svg" alt="Pruebas backend"></a>
+</p>
+
 ---
 
 ## ¿Por qué hicimos esto?
@@ -122,7 +126,7 @@ La guía completa, con las variables de entorno y los problemas comunes, está e
 
 ```bash
 cd Backend_Laravel
-php artisan test      # 104 pruebas automáticas sobre una base SQLite en memoria
+php artisan test      # 114 pruebas automáticas sobre una base SQLite en memoria
 ```
 
 ## Cómo trabajamos

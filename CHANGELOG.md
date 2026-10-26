@@ -6,6 +6,19 @@ Cada versión tiene su etiqueta (`git tag`) y su *release* en GitHub.
 
 ## [Sin publicar]
 
+### Agregado
+- Integración continua con **GitHub Actions**: las pruebas del backend corren solas en cada push y pull request
+  (insignia en el README).
+- 8 pruebas nuevas (114 en total): validación de la hora de fin al terminar una migraña y manejo de errores
+  de la base de datos.
+
+### Refactorizado
+- `RegistroController::terminar()` ya no copia la regla de fecha: usa `TerminarEpisodioRequest` con el trait
+  `ValidaFechaRegistro`, igual que crear y editar. La copia se había quedado sin la regla de «fecha demasiado
+  antigua».
+- El manejo de errores de la base de datos (SQLSTATE 45000 → 422) estaba copiado en 5 controladores: ahora vive
+  en `Controller::conReglasDeBd()`. La respuesta 404 se unificó en `Controller::noEncontrado()`.
+
 ### Cambiado
 - La app ahora se publica en **Cloudflare Pages**: https://migrasense.pages.dev. La dirección de GitHub Pages
   sigue funcionando como respaldo.
