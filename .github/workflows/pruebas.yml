@@ -1,0 +1,47 @@
+# Integración continua: corre las pruebas automáticas del backend en cada push y en cada pull request.
+# Si alguna prueba falla, el PR muestra una ❌ y no se debería fusionar.
+name: Pruebas backend
+
+on:
+  push:
+    branches: [main, develop]
+    paths: ['Backend_Laravel/**', '.github/workflows/pruebas.yml']
+  pull_request:
+    paths: ['Backend_Laravel/**', '.github/workflows/pruebas.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  phpunit:
+    name: PHPUnit (PHP 8.2 + SQLite en memoria)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: Backend_Laravel
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Instalar PHP 8.2 (la misma versión que XAMPP y Render)
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, pdo_sqlite, sqlite3, openssl, sodium
+          coverage: none
+
+      - name: Caché de Composer
+        uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache/files
+          key: composer-${{ hashFiles('Backend_Laravel/composer.lock') }}
+
+      - name: Instalar dependencias
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Revisar sintaxis de app/
+        run: find app -name '*.php' -print0 | xargs -0 -n1 php -l > /dev/null
+
+      - name: Correr las pruebas (SQLite en memoria, nunca toca Aiven)
+        run: php artisan test
