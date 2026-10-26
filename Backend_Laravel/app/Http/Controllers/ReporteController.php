@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Http\Requests\ReporteRequest;
 use App\Services\PerfilService;
 use App\Services\ReporteService;
-use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -37,23 +36,18 @@ class ReporteController extends Controller
         $uid = $request->user()->id_usuario;
         $d = $request->validated();
 
-        try {
+        return $this->conReglasDeBd(function () use ($request, $uid, $d) {
             $id = $this->reportes->generar($uid, (int) $d['dias'], $d['formato'] ?? 'pdf');
-        } catch (QueryException $e) {
-            if (($e->errorInfo[0] ?? '') === '45000') {
-                return response()->json(['error' => $e->errorInfo[2] ?? 'No se pudo generar el reporte'], 422);
-            }
-            throw $e;   // otro error: 500 genérico, detalle solo en storage/logs
-        }
 
-        return response()->json($this->datos($request, $id), 201);
+            return response()->json($this->datos($request, $id), 201);
+        }, 'No se pudo generar el reporte');
     }
 
     /** GET /api/reportes/{id} — vuelve a entregar los datos de un reporte ya generado */
     public function mostrar(Request $request, int $id): JsonResponse
     {
         if (! $this->reportes->obtener($request->user()->id_usuario, $id)) {
-            return $this->noEncontrado();
+            return $this->noEncontrado('Reporte no encontrado');
         }
         return response()->json($this->datos($request, $id));
     }
@@ -63,7 +57,7 @@ class ReporteController extends Controller
     {
         $uid = $request->user()->id_usuario;
         if (! $this->reportes->obtener($uid, $id)) {
-            return $this->noEncontrado();
+            return $this->noEncontrado('Reporte no encontrado');
         }
         $this->reportes->eliminar($uid, $id);
         return response()->json(['ok' => true]);
@@ -81,10 +75,5 @@ class ReporteController extends Controller
             'perfil'    => $this->perfiles->cargar($uid),
             'registros' => $this->reportes->registrosDe($uid, $id),
         ];
-    }
-
-    private function noEncontrado(): JsonResponse
-    {
-        return response()->json(['error' => 'Reporte no encontrado'], 404);
     }
 }
