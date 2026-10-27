@@ -96,6 +96,8 @@ Versionado semántico (`MAYOR.MENOR.PARCHE`). Cada versión tiene:
 
 ## Pruebas
 
-`php artisan test` corre 104 pruebas automáticas (autenticación, registros, permisos entre usuarios,
-recordatorios, reportes, predicción, seguridad) sobre una base SQLite en memoria. Antes de cada versión se
+`php artisan test` corre 114 pruebas automáticas (autenticación, registros, permisos entre usuarios,
+recordatorios, reportes, predicción, seguridad, manejo de errores) sobre una base SQLite en memoria.
+Además, **GitHub Actions** (`.github/workflows/pruebas.yml`) las corre solas en cada push y en cada pull request:
+el PR muestra ✅ si todas pasan o ❌ si alguna falla, y así quien revisa sabe que el cambio no rompió nada. Antes de cada versión se
 prueba además el flujo completo en el navegador, en celular y en PC.

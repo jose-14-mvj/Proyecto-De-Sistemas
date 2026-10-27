@@ -25,7 +25,7 @@ database/
 ├── migrations/         Cambios de estructura (se pueden correr varias veces sin romper nada)
 └── seeders/            Catálogos de síntomas, desencadenantes y condiciones
 routes/api.php          Todas las rutas de la API
-tests/                  104 pruebas automáticas (PHPUnit, SQLite en memoria)
+tests/                  114 pruebas automáticas (PHPUnit, SQLite en memoria)
 docker/, Dockerfile     Imagen que usa Render
 ```
 

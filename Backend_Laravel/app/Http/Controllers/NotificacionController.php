@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Http\Requests\CrearNotificacionRequest;
 use App\Http\Requests\MarcarNotificacionRequest;
 use App\Services\NotificacionService;
-use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -37,16 +36,11 @@ class NotificacionController extends Controller
         $uid = $request->user()->id_usuario;
         $d = $request->validated();
 
-        try {
+        return $this->conReglasDeBd(function () use ($uid, $d) {
             $id = $this->notificaciones->crear($uid, $d['tipo'], $d['mensaje'], $d['id_recordatorio'] ?? null);
-        } catch (QueryException $e) {
-            if (($e->errorInfo[0] ?? '') === '45000') {
-                return response()->json(['error' => $e->errorInfo[2] ?? 'No se pudo guardar'], 422);
-            }
-            throw $e;
-        }
 
-        return response()->json(['ok' => true, 'notificacion' => $this->notificaciones->obtener($uid, $id)], 201);
+            return response()->json(['ok' => true, 'notificacion' => $this->notificaciones->obtener($uid, $id)], 201);
+        });
     }
 
     /** PUT /api/notificaciones/{id} — marca enviada / leida / descartada */
@@ -54,7 +48,7 @@ class NotificacionController extends Controller
     {
         $uid = $request->user()->id_usuario;
         if (! $this->notificaciones->obtener($uid, $id)) {      // el SP no avisa si no es del usuario: se comprueba antes
-            return response()->json(['error' => 'Notificación no encontrada'], 404);
+            return $this->noEncontrado('Notificación no encontrada');
         }
         $this->notificaciones->marcar($uid, $id, $request->validated('estado'));
 
