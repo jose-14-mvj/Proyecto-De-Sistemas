@@ -28,6 +28,8 @@ Cada versión tiene su etiqueta (`git tag`) y su *release* en GitHub.
   en `Controller::conReglasDeBd()`. La respuesta 404 se unificó en `Controller::noEncontrado()`.
 
 ### Cambiado
+- El recordatorio diario llega **siempre** a la hora elegida en el perfil. Si ese día la persona ya registró algo,
+  cambia el texto («¿Algo más que anotar hoy?») en vez de omitirse.
 - Al cambiar la hora (o el día) de un recordatorio en Perfil, el aviso llega a la hora nueva ese mismo día o semana,
   aunque el de la hora anterior ya hubiera salido. Si la hora nueva ya pasó, empieza al día siguiente.
 - El aviso diario abre el registro de síntomas prodrómicos (`registro.html?tab=prodromico`).

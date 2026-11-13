@@ -15,8 +15,8 @@ use Throwable;
  *   php artisan migrasense:enviar-recordatorios
  * y, como respaldo, el despertador externo (POST /api/tareas/recordatorios).
  *
- * - Diario: notificación "¿Cómo te fue hoy?" a sus dispositivos. Si no tiene ninguno con
- *   avisos activados, le llega por correo. Si ya registró algo hoy, no se le molesta.
+ * - Diario: notificación "¿Cómo te fue hoy?" a sus dispositivos, siempre a la hora elegida
+ *   (si ya registró hoy, con otro texto). Si no tiene ningún dispositivo con avisos, por correo.
  * - Semanal: correo con el PDF de los últimos 7 días + notificación.
  * Cada aviso sale una sola vez por día/semana (tabla envio_recordatorio), aunque el
  * despertador llame varias veces o dos llamadas coincidan.
@@ -62,31 +62,35 @@ class RecordatorioEnvioService
         return $res;
     }
 
-    /** true = enviado, 'omitido' = ya había registrado hoy, false = ya se había enviado */
+    /** true = enviado, false = ya se había enviado hoy */
     private function diario(object $f, Carbon $ahora): bool|string
     {
         if (! $this->reservar($f->id_usuario, 'diario', $ahora->toDateString())) {
             return false;
         }
-        if ($this->registroHoy($f->id_usuario, $ahora)) {
-            $this->resultado($f->id_usuario, 'diario', $ahora->toDateString(), 'omitido: ya registró hoy');
-            return 'omitido';
-        }
-
+        // El aviso llega SIEMPRE a la hora que la persona eligió en su perfil. Antes se omitía si ese
+        // día ya había registrado algo, y parecía que las notificaciones fallaban. Ahora solo cambia
+        // el texto: si ya registró, se le agradece y se le invita a anotar cualquier otra señal.
+        $yaRegistro = $this->registroHoy($f->id_usuario, $ahora);
         $nombre = strtok((string) $f->nombres, ' ') ?: '';
         $dispositivos = $this->push->enviarAUsuario($f->id_usuario, [
-            'title' => '¿Cómo te fue hoy?',
-            'body'  => 'Toma un minuto para anotar tus síntomas. Así MigraSense puede anticipar tu próxima migraña.',
+            'title' => $yaRegistro ? '¿Algo más que anotar hoy?' : '¿Cómo te fue hoy?',
+            'body'  => $yaRegistro
+                ? 'Ya registraste hoy, ¡bien! Si notaste otra señal o cambió cómo te sientes, anótalo.'
+                : 'Toma un minuto para anotar tus síntomas. Así MigraSense puede anticipar tu próxima migraña.',
             'url'   => 'registro.html?tab=prodromico',     // al tocarlo abre el registro de síntomas prodrómicos
             'tag'   => 'migrasense-daily',
         ], 'high', 4 * 3600);
 
         $canal = $dispositivos > 0 ? "push a {$dispositivos} dispositivo(s)" : null;
         if ($dispositivos === 0) {
-            // Sin dispositivos con avisos: le llega por correo para que no se pierda
-            $canal = $this->enviarCorreo($f, ...$this->correoDiario($nombre, substr($f->hora_configurada, 0, 5)));
+            // Sin dispositivos con avisos: le llega por correo para que no se pierda.
+            // (Si ya registró hoy no se le manda correo: el recordatorio por correo es para quien falta.)
+            $canal = $yaRegistro
+                ? 'sin dispositivos con avisos; ya registró hoy (no se envía correo)'
+                : $this->enviarCorreo($f, ...$this->correoDiario($nombre, substr($f->hora_configurada, 0, 5)));
         }
-        $this->resultado($f->id_usuario, 'diario', $ahora->toDateString(), $canal);
+        $this->resultado($f->id_usuario, 'diario', $ahora->toDateString(), $canal.($yaRegistro && $dispositivos > 0 ? ' (ya había registrado hoy)' : ''));
         return true;
     }
 

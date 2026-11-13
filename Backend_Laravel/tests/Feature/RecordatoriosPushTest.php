@@ -140,17 +140,29 @@ class RecordatoriosPushTest extends TestCase
         Carbon::setTestNow();
     }
 
-    public function test_diario_no_molesta_si_ya_registro_hoy(): void
+    public function test_diario_llega_a_su_hora_aunque_ya_haya_registrado_hoy(): void
     {
-        Http::fake(['fcm.googleapis.com/*' => Http::response('', 201)]);
-        [, $t] = $this->usuarioConRecordatorios('20:00');
+        Http::fake(['fcm.googleapis.com/*' => Http::response('', 201), 'api.brevo.com/*' => Http::response([], 201)]);
+        [$u, $t] = $this->usuarioConRecordatorios('20:00');
         $this->postJson('/api/push/suscripcion', $this->suscripcion(), $this->conToken($t));
         $this->postJson('/api/registros/prodromico', ['intensidad' => 4, 'sintomas' => ['luz'],
             'inicio' => Carbon::now()->subMinutes(30)->format('Y-m-d\TH:i')], $this->conToken($t))->assertStatus(201);
 
         $r = $this->correr(Carbon::now('America/La_Paz')->setTime(20, 5)->format('Y-m-d H:i'));
-        $this->assertSame(1, $r['omitidos']);
-        $this->assertSame(0, $this->pushes());
+        $this->assertSame(1, $r['diarios']);          // la hora elegida en el perfil se respeta siempre
+        $this->assertSame(0, $r['omitidos']);
+        $this->assertSame(1, $this->pushes());
+        $this->assertStringContainsString('ya había registrado hoy', DB::table('envio_recordatorio')->where('id_usuario', $u->id_usuario)->value('resultado'));
+    }
+
+    public function test_diario_sin_dispositivos_y_ya_registro_hoy_no_manda_correo(): void
+    {
+        Http::fake(['api.brevo.com/*' => Http::response([], 201)]);
+        [, $t] = $this->usuarioConRecordatorios('20:00');
+        $this->postJson('/api/registros/prodromico', ['intensidad' => 4, 'sintomas' => ['luz'],
+            'inicio' => Carbon::now()->subMinutes(30)->format('Y-m-d\TH:i')], $this->conToken($t))->assertStatus(201);
+        $this->correr(Carbon::now('America/La_Paz')->setTime(20, 5)->format('Y-m-d H:i'));
+        $this->assertSame(0, $this->correos()->count());
     }
 
     public function test_diario_sin_dispositivos_llega_por_correo(): void
