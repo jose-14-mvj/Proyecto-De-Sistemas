@@ -10,8 +10,10 @@ use Throwable;
 
 /**
  * Envía los recordatorios a la hora que cada persona eligió en su perfil.
- * Lo ejecuta el despertador externo (cron-job.org → POST /api/tareas/recordatorios)
- * cada 15 minutos; también se puede correr a mano: php artisan migrasense:enviar-recordatorios
+ * Lo ejecuta el motor de avisos (GitHub Actions, cada 5 minutos, conectado directo a la base
+ * de datos: funciona aunque la API en Render esté dormida) con
+ *   php artisan migrasense:enviar-recordatorios
+ * y, como respaldo, el despertador externo (POST /api/tareas/recordatorios).
  *
  * - Diario: notificación "¿Cómo te fue hoy?" a sus dispositivos. Si no tiene ninguno con
  *   avisos activados, le llega por correo. Si ya registró algo hoy, no se le molesta.
@@ -75,9 +77,9 @@ class RecordatorioEnvioService
         $dispositivos = $this->push->enviarAUsuario($f->id_usuario, [
             'title' => '¿Cómo te fue hoy?',
             'body'  => 'Toma un minuto para anotar tus síntomas. Así MigraSense puede anticipar tu próxima migraña.',
-            'url'   => 'registro.html',
-            'tag'   => 'recordatorio-diario',
-        ]);
+            'url'   => 'registro.html?tab=prodromico',     // al tocarlo abre el registro de síntomas prodrómicos
+            'tag'   => 'migrasense-daily',
+        ], 'high', 4 * 3600);
 
         $canal = $dispositivos > 0 ? "push a {$dispositivos} dispositivo(s)" : null;
         if ($dispositivos === 0) {
@@ -106,16 +108,25 @@ class RecordatorioEnvioService
         $periodo = $this->fechaCorta($desde).' al '.$this->fechaCorta($ahora);
 
         [$asunto, $html, $texto] = $this->correoSemanal(strtok((string) $f->nombres, ' ') ?: '', $periodo, $ep, $se);
-        $canales = [$this->enviarCorreo($f, $asunto, $html, $texto, [[
+        $correo = $this->enviarCorreo($f, $asunto, $html, $texto, [[
             'nombre' => 'MigraSense-resumen-'.$ahora->format('Y-m-d').'.pdf', 'tipo' => 'application/pdf', 'contenido' => $pdf,
-        ]])];
+        ]]);
+        if ($correo !== null && str_starts_with($correo, 'correo falló')) {
+            // El proveedor rechazó el correo con adjunto (p. ej. el Apps Script antiguo no acepta
+            // adjuntos): el resumen se envía igual, sin PDF y con el enlace para descargarlo.
+            $aviso = '<p style="margin:0 0 16px;color:#4f5b6c;font-size:13px">Esta vez no pudimos adjuntar el PDF. Puedes descargarlo en MigraSense: Historial → Generar reporte.</p>';
+            $sinPdf = $this->enviarCorreo($f, $asunto, str_replace('<p style="margin:24px 0">', $aviso.'<p style="margin:24px 0">', $html),
+                $texto."\n\n(Esta vez no pudimos adjuntar el PDF: descárgalo en Historial → Generar reporte.)");
+            $correo = $sinPdf === 'correo' ? 'correo sin PDF (el adjunto falló)' : $correo;
+        }
+        $canales = [$correo];
 
         $resumen = $regs ? "Esta semana: {$ep} ".($ep === 1 ? 'migraña' : 'migrañas')." y {$se} ".($se === 1 ? 'señal' : 'señales').'.' : 'Esta semana no hay registros.';
         $n = $this->push->enviarAUsuario($f->id_usuario, [
             'title' => 'Tu resumen semanal está listo',
             'body'  => $resumen.' Te enviamos el PDF a tu correo.',
             'url'   => 'historial.html?reporte=1',
-            'tag'   => 'resumen-semanal',
+            'tag'   => 'migrasense-weekly',
         ]);
         if ($n > 0) {
             $canales[] = "push a {$n} dispositivo(s)";
@@ -172,9 +183,9 @@ class RecordatorioEnvioService
         $hola = $nombre !== '' ? 'Hola, '.e($nombre).':' : 'Hola:';
         $html = $this->plantilla($hola,
             '<p style="margin:0 0 16px">Toma un minuto para anotar cómo te sentiste hoy: las señales previas (bostezos, cansancio, sensibilidad a la luz…) y si tuviste migraña. Cada registro ayuda a anticipar la próxima.</p>',
-            $url.'/registro.html', 'Registrar ahora',
+            $url.'/registro.html?tab=prodromico', 'Registrar ahora',
             "Recibes este recordatorio porque está activado en tu perfil (todos los días a las {$hora}). Puedes cambiar la hora o apagarlo en Perfil → Recordatorios.");
-        $texto = ($nombre !== '' ? "Hola, {$nombre}:" : 'Hola:')."\n\nToma un minuto para anotar cómo te sentiste hoy en MigraSense: {$url}/registro.html\n\n"
+        $texto = ($nombre !== '' ? "Hola, {$nombre}:" : 'Hola:')."\n\nToma un minuto para anotar cómo te sentiste hoy en MigraSense: {$url}/registro.html?tab=prodromico\n\n"
             ."Recibes este recordatorio porque está activado en tu perfil (todos los días a las {$hora}).";
         return ['¿Cómo te fue hoy? · MigraSense', $html, $texto];
     }

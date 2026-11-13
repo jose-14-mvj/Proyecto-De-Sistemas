@@ -224,3 +224,15 @@ function msIniciarArmazon() {
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !menu.hidden) { abrir(false); btn.focus(); } });
 }
 document.addEventListener('DOMContentLoaded', msIniciarArmazon);
+
+/* El Service Worker (sw.js) pide abrir una pantalla al tocar una notificación */
+if (typeof navigator !== 'undefined' && navigator.serviceWorker) {
+  navigator.serviceWorker.addEventListener('message', e => {
+    const d = e.data || {};
+    if (d.tipo !== 'ms-ir' || typeof d.url !== 'string') return;
+    try {
+      const destino = new URL(d.url, location.href);
+      if (destino.origin === location.origin) location.href = destino.href;   // solo pantallas de MigraSense
+    } catch (err) { /* dirección no válida: se ignora */ }
+  });
+}

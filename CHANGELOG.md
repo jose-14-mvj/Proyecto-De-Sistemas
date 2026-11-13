@@ -6,7 +6,31 @@ Cada versión tiene su etiqueta (`git tag`) y su *release* en GitHub.
 
 ## [Sin publicar]
 
+### Agregado
+- **Motor de avisos independiente** ([docs/motor-de-avisos.md](docs/motor-de-avisos.md)): GitHub Actions ejecuta
+  `migrasense:enviar-recordatorios` cada 5 minutos conectado directo a la base de datos, así que el recordatorio
+  diario, el resumen semanal y la alerta de migraña salen aunque la API en Render esté dormida.
+- **Alerta de posible migraña enviada por el servidor** (`AlertaMigranaService`): llega con la app cerrada e incluye
+  la probabilidad y en cuántas horas podría empezar. Antes solo existía con la app abierta.
+- `POST /api/push/renovar`: el navegador renueva su suscripción sin perder los avisos.
+- Comando `migrasense:probar-avisos <correo>`: envía ahora los 3 avisos de prueba y dice qué canal funcionó.
+- 13 pruebas nuevas (127 en total) en `MotorAvisosTest`.
+- Integración continua con **GitHub Actions**: las pruebas del backend corren solas en cada push y pull request
+  (insignia en el README).
+- 8 pruebas nuevas (114 en total): validación de la hora de fin al terminar una migraña y manejo de errores
+  de la base de datos.
+
+### Refactorizado
+- `RegistroController::terminar()` ya no copia la regla de fecha: usa `TerminarEpisodioRequest` con el trait
+  `ValidaFechaRegistro`, igual que crear y editar. La copia se había quedado sin la regla de «fecha demasiado
+  antigua».
+- El manejo de errores de la base de datos (SQLSTATE 45000 → 422) estaba copiado en 5 controladores: ahora vive
+  en `Controller::conReglasDeBd()`. La respuesta 404 se unificó en `Controller::noEncontrado()`.
+
 ### Cambiado
+- El aviso diario abre el registro de síntomas prodrómicos (`registro.html?tab=prodromico`).
+- Los avisos push salen con urgencia alta (Android en reposo retenía los de urgencia normal).
+- Resumen semanal: si el proveedor rechaza el PDF adjunto, el correo se envía igual sin el PDF.
 - La app ahora se publica en **Cloudflare Pages**: https://migrasense.pages.dev. La dirección de GitHub Pages
   sigue funcionando como respaldo.
 - Render: `CORS_ALLOWED_ORIGINS` acepta las dos direcciones y `FRONTEND_URL` apunta a la nueva (los enlaces

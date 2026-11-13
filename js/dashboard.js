@@ -112,7 +112,10 @@ msAlCargar(() => {
     /* Posible episodio de migraña (probabilidad muy alta) */
     const alerta = MSAnalisis.alertaEpisodio(records, onboarding);
     document.getElementById('episodeAlert').hidden = !alerta.activa;
-    if (alerta.activa) document.getElementById('episodeAlertText').textContent = alerta.texto;
+    if (alerta.activa) {
+      document.getElementById('episodeAlertTitle').textContent = alerta.titulo;     // incluye la probabilidad
+      document.getElementById('episodeAlertText').textContent = alerta.texto;
+    }
   }
   pintarRiesgo(risk.fuente === 'ml' ? '' : ' (Calculando con el modelo de predicción…)');
 

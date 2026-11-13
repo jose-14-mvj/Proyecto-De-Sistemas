@@ -78,7 +78,23 @@ class MigranaEnCursoTest extends TestCase
         $this->postJson("/api/registros/episodio/$id2/terminar", ['fin' => Carbon::now()->subHours(5)->format('Y-m-d\TH:i')], $this->conToken($t))
             ->assertStatus(422);
         $this->postJson("/api/registros/episodio/$id2/terminar", ['fin' => Carbon::now()->addDay()->format('Y-m-d\TH:i')], $this->conToken($t))
-            ->assertStatus(422);
+            ->assertStatus(422)->assertJsonPath('errors.fin.0', 'La fecha no puede estar en el futuro.');
+    }
+
+    /** Refactorización: terminar() usa TerminarEpisodioRequest con la misma regla de fecha que crear/editar */
+    public function test_terminar_valida_la_fecha_con_la_regla_compartida(): void
+    {
+        [, $t] = $this->usuarioConToken();
+        $id = $this->crear($t, ['inicio' => Carbon::now()->subHours(2)->format('Y-m-d\TH:i'), 'en_curso' => true])->json('registro.id');
+
+        $this->postJson("/api/registros/episodio/$id/terminar", ['fin' => 'no-es-fecha'], $this->conToken($t))
+            ->assertStatus(422)->assertJsonValidationErrors('fin');
+        $this->postJson("/api/registros/episodio/$id/terminar", ['fin' => Carbon::now()->subYears(11)->format('Y-m-d\TH:i')], $this->conToken($t))
+            ->assertStatus(422)->assertJsonPath('errors.fin.0', 'La fecha es demasiado antigua.');
+
+        // sin "fin" sigue terminando ahora mismo
+        $this->postJson("/api/registros/episodio/$id/terminar", [], $this->conToken($t))
+            ->assertOk()->assertJsonPath('registro.enCurso', false);
     }
 
     public function test_no_se_puede_terminar_la_migrana_de_otra_persona(): void

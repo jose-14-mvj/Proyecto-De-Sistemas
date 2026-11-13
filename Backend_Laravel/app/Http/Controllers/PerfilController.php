@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\PerfilRequest;
 use App\Services\PerfilService;
-use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -28,16 +27,10 @@ class PerfilController extends Controller
     {
         $id = $request->user()->id_usuario;   // siempre el dueño del token: nunca un id enviado por el cliente
 
-        try {
+        return $this->conReglasDeBd(function () use ($request, $id) {
             $this->perfiles->guardar($id, $request->validated());
-        } catch (QueryException $e) {
-            // SQLSTATE 45000 = validación del procedimiento almacenado (mensaje pensado para el usuario)
-            if (($e->errorInfo[0] ?? '') === '45000') {
-                return response()->json(['error' => $e->errorInfo[2] ?? 'No se pudo guardar el cuestionario'], 422);
-            }
-            throw $e;   // otro error: 500 genérico (el detalle queda solo en storage/logs)
-        }
 
-        return response()->json(['ok' => true, 'perfil' => $this->perfiles->cargar($id)]);
+            return response()->json(['ok' => true, 'perfil' => $this->perfiles->cargar($id)]);
+        }, 'No se pudo guardar el cuestionario');
     }
 }

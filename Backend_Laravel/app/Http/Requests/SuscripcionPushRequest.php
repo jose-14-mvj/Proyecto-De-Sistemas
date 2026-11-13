@@ -26,7 +26,7 @@ class SuscripcionPushRequest extends FormRequest
     public function rules(): array
     {
         $soloEndpoint = $this->isMethod('delete');
-        return [
+        return ($this->is('api/push/renovar') ? ['anterior' => ['required', 'string', 'max:1000', 'starts_with:https://']] : []) + [
             'endpoint'     => ['required', 'string', 'max:1000', 'starts_with:https://', function ($a, $v, $fail) {
                 $host = strtolower((string) parse_url((string) $v, PHP_URL_HOST));
                 foreach (self::HOSTS as $h) {

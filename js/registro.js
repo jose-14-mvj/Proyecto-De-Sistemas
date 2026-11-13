@@ -220,7 +220,8 @@ msAlCargar(() => {
 
   /* ---------- Construir grid de disparadores (pestaña 2) ---------- */
   const epDisparadores = document.getElementById('epDisparadores');
-  MS_TRIGGERS.forEach(t => {
+  // "Ninguno / no lo sé" permite que el campo sea obligatorio sin forzar a inventar un desencadenante
+  [{ id: 'ninguno', label: 'Ninguno / no lo sé' }, ...MS_TRIGGERS].forEach(t => {
     const label = document.createElement('label');
     label.className = 'chip';
     label.dataset.value = t.id;
@@ -228,6 +229,27 @@ msAlCargar(() => {
     epDisparadores.appendChild(label);
   });
   bindMulti(epDisparadores);
+  epDisparadores.addEventListener('change', e => {
+    const input = e.target;
+    if (!input.matches('input')) return;
+    const ninguno = epDisparadores.querySelector('[data-value="ninguno"] input');
+    if (input === ninguno && input.checked) {
+      epDisparadores.querySelectorAll('input').forEach(o => { if (o !== ninguno) { o.checked = false; o.closest('.chip').classList.remove('selected'); } });
+    } else if (input !== ninguno && input.checked) {
+      ninguno.checked = false; ninguno.closest('.chip').classList.remove('selected');
+    }
+  });
+
+  /* Campo obligatorio sin responder: aviso, se marca en rojo y se lleva la pantalla hasta él */
+  function falta(el, mensaje) {
+    msToast(mensaje, '⚠️');
+    const titulo = el.previousElementSibling && el.previousElementSibling.matches('p') ? el.previousElementSibling.previousElementSibling : el.previousElementSibling;
+    [el, titulo].forEach(x => { if (x) x.classList.add('campo-falta'); });
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    const limpiar = () => { [el, titulo].forEach(x => { if (x) x.classList.remove('campo-falta'); }); el.removeEventListener('change', limpiar); el.removeEventListener('input', limpiar); };
+    el.addEventListener('change', limpiar); el.addEventListener('input', limpiar);
+    return false;
+  }
 
 
   bindSingle(document.getElementById('epMedicacion'));
@@ -295,7 +317,7 @@ msAlCargar(() => {
       horasOriginales = [epFecha.value, epHoraInicio.value, epHoraFin.value, getSingleValue(epFinModo)].join('|');
       seleccionar(document.getElementById('epAura'), r.aura ? [r.aura] : []);
       seleccionar(epSintomas, (r.sintomas || []).length ? r.sintomas : ['ninguno']);
-      seleccionar(epDisparadores, r.disparadores);
+      seleccionar(epDisparadores, (r.disparadores || []).length ? r.disparadores : ['ninguno']);
       seleccionar(document.getElementById('epMedicacion'), [r.medicacion ? 'si' : 'no']);
       epMedNombreWrap.style.display = r.medicacion ? '' : 'none';
       document.getElementById('epMedNombre').value = r.medicamento || '';
@@ -375,13 +397,21 @@ msAlCargar(() => {
     if (Number.isNaN(inicio.getTime())) { msToast('La fecha u hora de inicio no es válida', '⚠️'); return; }
     if (inicio.getTime() > Date.now() + 60000) { msToast('La migraña no puede comenzar en el futuro', '⚠️'); return; }
 
+    // Todos los campos son obligatorios menos las notas
+    const epAura = document.getElementById('epAura'), epMed = document.getElementById('epMedicacion'), epMedNombre = document.getElementById('epMedNombre');
+    if (!getSingleValue(epAura)) return falta(epAura, 'Responde si fue una migraña con aura');
+    if (!getMultiValues(epSintomas).length) return falta(epSintomas, 'Marca los síntomas que notaste antes del dolor (o «Ningún síntoma»)');
+    if (!getMultiValues(epDisparadores).length) return falta(epDisparadores, 'Marca los posibles desencadenantes (o «Ninguno / no lo sé»)');
+    if (!getSingleValue(epMed)) return falta(epMed, 'Indica si tomaste medicación');
+    if (getSingleValue(epMed) === 'si' && !epMedNombre.value.trim()) return falta(epMedNombre, 'Escribe qué medicamento tomaste');
+
     const medicacion = getSingleValue(document.getElementById('epMedicacion')) === 'si';
     const datos = {
       intensidad: Number(document.getElementById('epIntensidad').value),
       inicio: inicio.toISOString(),
       aura: getSingleValue(document.getElementById('epAura')),   // si | no | no_se | null (sin responder)
       sintomas: getMultiValues(epSintomas).filter(s => s !== 'ninguno'),   // códigos (luz, cervical…); "Ningún síntoma" = lista vacía
-      disparadores: getMultiValues(epDisparadores),
+      disparadores: getMultiValues(epDisparadores).filter(d => d !== 'ninguno'),   // «Ninguno / no lo sé» = lista vacía
       medicacion,
       medicamento: medicacion ? document.getElementById('epMedNombre').value.trim() : '',
       notas: document.getElementById('epNotas').value.trim()
