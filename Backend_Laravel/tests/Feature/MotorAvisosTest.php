@@ -278,4 +278,62 @@ class MotorAvisosTest extends TestCase
             'keys' => $nueva['keys']])->assertStatus(422);                                                 // solo servicios de push reales
         $this->assertCount(1, DB::table('suscripcion_push')->get());
     }
+
+    /* ---------- Cambiar la hora en Perfil: el aviso llega a la hora nueva ---------- */
+
+    public function test_si_cambia_la_hora_el_diario_llega_a_la_hora_nueva_aunque_hoy_ya_hubiera_salido(): void
+    {
+        $this->falso(0.1);
+        [$u, $t] = $this->usuarioConToken();
+        $this->postJson('/api/push/suscripcion', $this->suscripcion(), $this->conToken($t))->assertStatus(201);
+        $motor = fn (string $hora) => app(RecordatorioEnvioService::class)->ejecutar(Carbon::parse('2026-10-14 '.$hora, 'America/La_Paz'))['diarios'];
+
+        Carbon::setTestNow(Carbon::parse('2026-10-14 08:00', 'America/La_Paz'));
+        $this->putJson('/api/recordatorios', ['daily' => ['on' => true, 'time' => '09:00']], $this->conToken($t))->assertOk();
+        $this->assertSame(1, $motor('09:01'));                 // salió a las 09:00
+        $this->assertSame(0, $motor('09:03'));
+
+        Carbon::setTestNow(Carbon::parse('2026-10-14 10:00', 'America/La_Paz'));
+        $this->putJson('/api/recordatorios', ['daily' => ['time' => '16:30']], $this->conToken($t))->assertOk();   // la mueve a la tarde
+        $this->assertSame(0, $motor('16:29'));                 // todavía no
+        $this->assertSame(1, $motor('16:31'));                 // llega a la hora nueva, el mismo día
+        $this->assertSame(0, $motor('16:33'));                 // y no se repite
+        $this->assertSame(2, $this->pushes());
+        Carbon::setTestNow();
+    }
+
+    public function test_si_la_hora_nueva_ya_paso_hoy_empieza_manana_y_no_llega_de_golpe(): void
+    {
+        $this->falso(0.1);
+        [$u, $t] = $this->usuarioConToken();
+        $this->postJson('/api/push/suscripcion', $this->suscripcion(), $this->conToken($t))->assertStatus(201);
+        $motor = fn (string $cuando) => app(RecordatorioEnvioService::class)->ejecutar(Carbon::parse($cuando, 'America/La_Paz'))['diarios'];
+
+        Carbon::setTestNow(Carbon::parse('2026-10-14 17:10', 'America/La_Paz'));
+        $this->putJson('/api/recordatorios', ['daily' => ['time' => '15:00']], $this->conToken($t))->assertOk();   // las 15:00 ya pasaron
+        $this->assertSame(0, $motor('2026-10-14 17:12'));
+        $this->assertSame(1, $motor('2026-10-15 15:01'));     // mañana a su hora
+        // Guardar sin cambiar la hora no toca nada
+        Carbon::setTestNow(Carbon::parse('2026-10-15 15:05', 'America/La_Paz'));
+        $this->putJson('/api/recordatorios', ['daily' => ['time' => '15:00'], 'alerta' => ['on' => true]], $this->conToken($t))->assertOk();
+        $this->assertSame(0, $motor('2026-10-15 15:06'));
+        Carbon::setTestNow();
+    }
+
+    public function test_si_cambia_el_dia_o_la_hora_del_semanal_vuelve_a_salir_esta_semana(): void
+    {
+        $this->falso(0.1);
+        [$u, $t] = $this->usuarioConToken();
+        $motor = fn (string $cuando) => app(RecordatorioEnvioService::class)->ejecutar(Carbon::parse($cuando, 'America/La_Paz'))['semanales'];
+
+        Carbon::setTestNow(Carbon::parse('2026-10-14 08:00', 'America/La_Paz'));                                 // miércoles
+        $this->putJson('/api/recordatorios', ['weekly' => ['on' => true, 'day' => 3, 'time' => '09:00']], $this->conToken($t))->assertOk();
+        $this->assertSame(1, $motor('2026-10-14 09:01'));
+        Carbon::setTestNow(Carbon::parse('2026-10-14 10:00', 'America/La_Paz'));
+        $this->putJson('/api/recordatorios', ['weekly' => ['day' => 5, 'time' => '16:50']], $this->conToken($t))->assertOk();   // lo pasa al viernes
+        $this->assertSame(0, $motor('2026-10-15 16:51'));     // jueves: no
+        $this->assertSame(1, $motor('2026-10-16 16:51'));     // viernes a la hora nueva
+        $this->assertSame(0, $motor('2026-10-16 16:53'));
+        Carbon::setTestNow();
+    }
 }
