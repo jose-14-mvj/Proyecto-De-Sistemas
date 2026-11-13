@@ -53,6 +53,12 @@ return [
         'ventana_horas'  => (int) env('RECORDATORIO_VENTANA_HORAS', 3),   // si el aviso se atrasa, hasta cuánto después aún se envía
     ],
 
+    // Motor de avisos: alerta de posible migraña enviada por el servidor
+    'avisos' => [
+        'alerta_cada_horas' => (int) env('ALERTA_CADA_HORAS', 3),     // cada cuánto se recalcula el riesgo de cada persona
+        'silencio'          => (string) env('ALERTA_SILENCIO', '23-6'),  // de 23:00 a 05:59 no se envían alertas ('' = siempre)
+    ],
+
     'correo' => [
         'appsscript_url'     => env('CORREO_APPSSCRIPT_URL', ''),
         'appsscript_secreto' => env('CORREO_APPSSCRIPT_SECRETO', ''),

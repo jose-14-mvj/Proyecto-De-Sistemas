@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="Persona inclinando la cabeza hacia un hombro">
+  <rect width="200" height="200" rx="24" fill="#e6edfb"/>
+  <!-- torso y hombros -->
+  <path d="M28 200c0-34 22-52 50-56l22 10 22-10c28 4 50 22 50 56Z" fill="#3f6fd8"/>
+  <!-- cuello -->
+  <path d="M88 104h26v44l-14 8-12-8Z" fill="#e9b792"/>
+  <!-- cabeza inclinada hacia el hombro derecho de la figura -->
+  <g transform="rotate(24 100 112)">
+    <path d="M70 62c0-22 13-36 30-36s30 14 30 36c0 6-1 11-3 15H73c-2-4-3-9-3-15Z" fill="#3b2a22"/>
+    <ellipse cx="100" cy="82" rx="26" ry="31" fill="#f3c7a4"/>
+    <path d="M74 74c2-18 12-28 26-28s24 10 26 28c-8-9-16-13-26-13s-18 4-26 13Z" fill="#3b2a22"/>
+    <path d="M88 84q4 3 8 0M104 84q4 3 8 0" fill="none" stroke="#3b2a22" stroke-width="2.2" stroke-linecap="round"/>
+    <path d="M93 98q7 5 14 0" fill="none" stroke="#b5654a" stroke-width="2.2" stroke-linecap="round"/>
+  </g>
+  <!-- flecha: dirección de la inclinación -->
+  <path d="M52 40a62 62 0 0 1 64-20" fill="none" stroke="#2f5bd3" stroke-width="5" stroke-linecap="round" stroke-dasharray="1 10"/>
+  <path d="M108 10l12 9-13 8" fill="none" stroke="#2f5bd3" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- lado que se estira -->
+  <path d="M74 132q-6 8-14 12" fill="none" stroke="#f2994a" stroke-width="4" stroke-linecap="round"/>
+  <path d="M70 122q-9 7-19 9" fill="none" stroke="#f2994a" stroke-width="4" stroke-linecap="round"/>
+</svg>

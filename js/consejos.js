@@ -28,10 +28,11 @@
     { t: 'Enfermedad cardíaca o arritmias', d: 'Tener cuidado con:', l: ['Cafeína en exceso','Cambios bruscos en la dieta'] },
     { t: 'Embarazo', d: 'No iniciar suplementos o hierbas por cuenta propia (magnesio, vitamina B2, CoQ10, etc.).', l: [] }
   ];
+  // ej-cuello es un dibujo propio (.svg): la foto anterior mostraba la mano en el cuello, no el estiramiento
   const EJERCICIOS = [
     { img: 'ej-respiracion', t: 'Respiración diafragmática', d: 'Relaja el cuerpo y la mente.',
       p: ['Inhala por la nariz durante 4 segundos.', 'Mantén 1–2 segundos.', 'Exhala lentamente por la boca durante 6 segundos.'], n: 'Repite 5–10 minutos.' },
-    { img: 'ej-cuello', t: 'Estiramiento del cuello', d: 'Reduce la tensión en cuello y cabeza.',
+    { img: 'ej-cuello', ext: 'svg', t: 'Estiramiento del cuello', d: 'Reduce la tensión en cuello y cabeza.',
       p: ['Inclina la cabeza hacia el hombro derecho. Mantén 15–20 seg.', 'Cambia al lado izquierdo. Mantén 15–20 seg.', 'Lleva la barbilla hacia el pecho. Mantén 15–20 seg.'],
       n: 'Repite 2–3 veces por lado. No hagas movimientos bruscos ni círculos completos con el cuello.' },
     { img: 'ej-hombros', t: 'Estiramiento de hombros', d: 'Libera la tensión de la parte superior del cuerpo.',
@@ -70,7 +71,7 @@
     `<p class="small muted">No todos los ejercicios funcionan igual en todas las personas. Realízalos de forma regular y con calma.</p>` +
     EJERCICIOS.map((e, i) => `
       <div class="ex-item">
-        ${e.img ? `<img src="${IMG}${e.img}.jpg" alt="${e.t}" loading="lazy">` : `<span class="ex-num">${i + 1}</span>`}
+        ${e.img ? `<img src="${IMG}${e.img}.${e.ext || 'jpg'}"${e.ext === 'svg' ? ' class="ex-dibujo"' : ''} alt="${e.t}" loading="lazy">` : `<span class="ex-num">${i + 1}</span>`}
         <div><strong>${i + 1}. ${e.t}</strong><p class="small muted">${e.d}</p>${ul(e.p)}${e.n ? `<p class="small"><em>${e.n}</em></p>` : ''}</div>
       </div>`).join('') +
     h('Ejercicio aeróbico (para prevenir migrañas)') +

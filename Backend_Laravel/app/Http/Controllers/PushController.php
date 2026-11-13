@@ -42,6 +42,19 @@ class PushController extends Controller
         return response()->json(['ok' => true]);
     }
 
+    /**
+     * POST /api/push/renovar  { anterior, endpoint, keys:{p256dh, auth} }   (sin sesión)
+     * Lo llama el Service Worker cuando el navegador cambia la suscripción por su cuenta.
+     * El Service Worker no tiene el token de la sesión; la prueba de que es el mismo
+     * dispositivo es conocer la dirección anterior, que es secreta y solo él la tiene.
+     */
+    public function renovar(SuscripcionPushRequest $request): JsonResponse
+    {
+        $d = $request->validated();
+        $ok = $this->push->renovar((string) $request->input('anterior'), $d['endpoint'], $d['keys']['p256dh'], $d['keys']['auth']);
+        return response()->json(['ok' => $ok], $ok ? 200 : 404);
+    }
+
     /** POST /api/push/prueba: manda un aviso de prueba a todos los dispositivos de la persona */
     public function prueba(Request $request): JsonResponse
     {

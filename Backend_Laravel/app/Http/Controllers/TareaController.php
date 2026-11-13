@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\AlertaMigranaService;
 use App\Services\RecordatorioEnvioService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -13,7 +14,7 @@ use Illuminate\Http\Request;
 class TareaController extends Controller
 {
     /** POST /api/tareas/recordatorios  (cada 15 minutos) */
-    public function recordatorios(Request $request, RecordatorioEnvioService $servicio): JsonResponse
+    public function recordatorios(Request $request, RecordatorioEnvioService $servicio, AlertaMigranaService $alertas): JsonResponse
     {
         $clave = (string) config('services.cron.clave');
         if ($clave === '' || ! hash_equals($clave, (string) $request->header('X-Cron-Key'))) {
@@ -23,6 +24,12 @@ class TareaController extends Controller
         ignore_user_abort(true);
         @set_time_limit(140);
 
-        return response()->json(['ok' => true] + $servicio->ejecutar());
+        $res = $servicio->ejecutar();
+        try {
+            $res['alertas'] = $alertas->ejecutar()['alertas'];
+        } catch (\Throwable $e) {
+            $res['alertas'] = 0;   // los recordatorios ya salieron; la alerta se reintenta en la siguiente llamada
+        }
+        return response()->json(['ok' => true] + $res);
     }
 }

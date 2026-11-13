@@ -221,13 +221,16 @@ const MSAnalisis = (() => {
     desde = Math.max(0, Math.round(desde));
     hasta = Math.max(desde + 1, Math.round(hasta));
     if (desde === 0 && hasta <= 1) hasta = 2;
-    const texto = desde === 0
-      ? `En las próximas ${hasta} horas puede que tengas un episodio de migraña.`
-      : `En ${desde} a ${hasta} horas puede que tengas un episodio de migraña.`;
+    // Además de en cuántas horas, se dice la probabilidad (la del modelo de ML; con las reglas
+    // de respaldo es el riesgo estimado). Mismo texto que el aviso que envía el servidor.
+    const pct = Math.round(r.score);
+    const queEs = r.fuente === 'ml' ? 'probabilidad' : 'riesgo estimado';
+    const cuando = desde === 0 ? `En las próximas ${hasta} horas` : `En ${desde} a ${hasta} horas`;
+    const texto = `${cuando} puede que tengas un episodio de migraña (${queEs} ${pct} %).`;
     const clave = prodRecientes.length ? 'p' + prodRecientes[0].id : 'r' + new Date(ahora).toISOString().slice(0, 10);
 
-    return { ...base, activa: true, desde, hasta, texto, clave,
-      titulo: 'Posible episodio de migraña',
+    return { ...base, activa: true, desde, hasta, texto, clave, probabilidad: pct,
+      titulo: `Posible migraña · ${pct} % de ${r.fuente === 'ml' ? 'probabilidad' : 'riesgo'}`,
       cuerpo: texto + ' Descansa, hidrátate y evita tus desencadenantes.' };
   }
 

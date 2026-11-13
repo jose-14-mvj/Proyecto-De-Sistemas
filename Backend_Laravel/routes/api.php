@@ -30,6 +30,9 @@ Route::post('/clave/restablecer', [RecuperacionClaveController::class, 'restable
 // Despertador externo (cron-job.org): envía los recordatorios a su hora. Protegido con X-Cron-Key.
 Route::post('/tareas/recordatorios', [TareaController::class, 'recordatorios'])->middleware('throttle:12,1');
 
+// El navegador renovó su suscripción de avisos (lo llama el Service Worker, sin sesión)
+Route::post('/push/renovar', [PushController::class, 'renovar'])->middleware('throttle:10,1');
+
 // Protegidas: requieren "Authorization: Bearer <token>"
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/sesion',  [AuthController::class, 'sesion']);
