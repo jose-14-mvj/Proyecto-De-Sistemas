@@ -7,7 +7,8 @@
 | API | Render (Docker) | https://migrasence-api.onrender.com/api | Al hacer push a `main` (Auto-Deploy) o con *Manual Deploy* |
 | Machine learning | Render (Docker) | https://migrasence-ml.onrender.com | Al hacer push al repo `migrasence-ml` |
 | Base de datos | Aiven (MySQL 8.4) | privado | Con migraciones (ver abajo) |
-| Despertador | cron-job.org | — | Llama a `/api/tareas/recordatorios` cada 15 min de 06:00 a 23:45 |
+| Motor de avisos | GitHub Actions (repo `migrasense`) | — | Cada 5 min envía los avisos conectado directo a Aiven. Ver [motor-de-avisos.md](motor-de-avisos.md) |
+| Despertador (respaldo) | cron-job.org | — | Llama a `/api/tareas/recordatorios`; ya no es necesario, puede quedar como respaldo |
 
 ## Orden para publicar un cambio
 

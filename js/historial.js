@@ -198,7 +198,7 @@ msAlCargar(() => {
     const t0 = calMonth.toLocaleDateString('es-BO', { month: 'long', year: 'numeric' });
     const title = t0.charAt(0).toUpperCase() + t0.slice(1);
     calBox.innerHTML = `
-      <div class="card">
+      <div class="card cal-box">
         <div class="cal-head">
           <button type="button" class="cal-nav" data-nav="-1" aria-label="Mes anterior">‹</button>
           <strong>${title}</strong>

@@ -17,9 +17,13 @@
    Los horarios se guardan en el servidor (PUT /api/recordatorios), así se
    conservan al cambiar de celular o navegador.
    6. AVISOS CON LA APP CERRADA (Web Push): el navegador se suscribe con la
-      clave del servidor; a la hora elegida el servidor (despertado por
-      cron-job.org) envía la notificación aunque MigraSense esté cerrada.
+      clave del servidor. El motor de avisos (GitHub Actions, cada 5 minutos,
+      conectado directo a la base de datos) envía los 3 avisos aunque
+      MigraSense esté cerrada y aunque la API esté dormida: recordatorio
+      diario, resumen semanal y alerta de posible migraña (con probabilidad).
       En iPhone funciona solo si la app está instalada en la pantalla de inicio.
+   7. Si este dispositivo todavía no tiene los avisos activados, Inicio
+      muestra una invitación para activarlos (sin eso no puede llegar nada).
    =================================================================== */
 const MSRec = (() => {
   const DAY = 86400000;
@@ -202,6 +206,79 @@ const MSRec = (() => {
     }
   }
 
+  async function asegurarPush() {
+    if (permiso() !== 'granted' || !soportaPush() || typeof MSApi === 'undefined') return;
+    let sincronizado = false, guardado = null, actual = null;
+    try { sincronizado = sessionStorage.getItem('ms_push_sync') === '1'; guardado = localStorage.getItem(PUSH_KEY); } catch (e) { /* nada */ }
+    try {
+      const reg = await registrarSW();
+      const sub = reg && await reg.pushManager.getSubscription();
+      actual = sub ? sub.endpoint : null;
+    } catch (e) { /* se intenta suscribir igual */ }
+    if (!sincronizado || !actual || actual !== guardado) suscribirPush();
+  }
+
+  /* Invitación a activar los avisos en este dispositivo (solo en Inicio, si aún no decidió) */
+  const INVITA_KEY = 'ms_push_invita';
+  const esIOS = () => /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const instalada = () => (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
+
+  function invitarAActivar() {
+    if (paginaActual() !== 'dashboard.html' || document.getElementById('pushInvita')) return;
+    const s = get();
+    if (!s.daily.on && !s.weekly.on && !s.alerta.on) return;          // no quiere avisos
+    let pospuesto = 0;
+    try { pospuesto = Number(localStorage.getItem(INVITA_KEY)) || 0; } catch (e) { /* nada */ }
+    if (Date.now() < pospuesto) return;
+
+    const iosSinInstalar = esIOS() && !instalada();
+    let titulo, texto, boton = '';
+    if (iosSinInstalar) {
+      titulo = 'Para recibir avisos en tu iPhone, instala MigraSense';
+      texto = 'En Safari toca Compartir y luego «Añadir a pantalla de inicio». Abre MigraSense desde ese ícono y activa los avisos.';
+    } else if (!soportaPush()) {
+      return;                                                         // navegador sin notificaciones: nada que ofrecer
+    } else if (permiso() === 'default') {
+      titulo = 'Activa los avisos en este dispositivo';
+      texto = 'Así te llegan el recordatorio diario, el resumen semanal y la alerta de posible migraña aunque MigraSense esté cerrada.';
+      boton = '<button type="button" class="btn btn-primary btn-sm" data-inv="activar">Activar avisos</button>';
+    } else if (permiso() === 'denied') {
+      titulo = 'Los avisos están bloqueados en este navegador';
+      texto = 'Para recibirlos, toca el candado junto a la dirección de la página, entra a Permisos y permite las Notificaciones.';
+    } else {
+      return;                                                         // ya los tiene activados
+    }
+    const host = document.querySelector('.screen');
+    if (!host) return;
+    const el = document.createElement('div');
+    el.id = 'pushInvita'; el.className = 'rem-banner'; el.setAttribute('role', 'status');
+    el.innerHTML = `
+      <div class="rem-banner-icon" aria-hidden="true">🔔</div>
+      <div class="rem-banner-body"><strong>${esc(titulo)}</strong><span>${esc(texto)}</span></div>
+      <div class="rem-banner-actions">${boton}
+        <button type="button" class="rem-x" data-inv="luego" aria-label="Ahora no">×</button>
+      </div>`;
+    const topbar = host.querySelector('.page-head, .topbar');
+    host.insertBefore(el, topbar ? topbar.nextSibling : host.firstChild);
+    el.addEventListener('click', async e => {
+      const b = e.target.closest('[data-inv]');
+      if (!b) return;
+      if (b.dataset.inv === 'luego') {
+        try { localStorage.setItem(INVITA_KEY, String(Date.now() + 3 * DAY)); } catch (err) { /* nada */ }
+        el.remove();
+        return;
+      }
+      b.setAttribute('aria-busy', 'true');
+      const p = await pedirPermiso();
+      const r = p === 'granted' ? await suscribirPush() : p;
+      el.remove();
+      if (typeof msToast !== 'function') return;
+      if (r === 'ok') msToast('Avisos activados en este dispositivo', '✅');
+      else if (p === 'denied') msToast('Bloqueaste los avisos. Puedes permitirlos desde el candado de la barra de direcciones.', '⚠️');
+      else if (p === 'granted') msToast('Permiso dado, pero no se pudo registrar el dispositivo. Abre Perfil → Recordatorios y toca «Probar».', '⚠️');
+    });
+  }
+
   /** Al cerrar sesión: este navegador deja de recibir los avisos de esta cuenta */
   async function quitarPush() {
     let endpoint = null;
@@ -234,7 +311,7 @@ const MSRec = (() => {
     const acciones = alerta
       ? `<a class="btn btn-primary btn-sm" href="registro.html?tab=prodromico">Registrar síntomas</a>
          <a class="btn btn-outline btn-sm" href="consejos.html">Ver consejos</a>`
-      : `<a class="btn btn-primary btn-sm" href="${diario ? 'registro.html' : 'historial.html'}">${diario ? 'Registrar ahora' : 'Ver historial'}</a>
+      : `<a class="btn btn-primary btn-sm" href="${diario ? 'registro.html?tab=prodromico' : 'historial.html?reporte=1'}">${diario ? 'Registrar ahora' : 'Ver historial'}</a>
          ${diario ? '<button type="button" class="btn btn-outline btn-sm" data-rem="snooze">En 1 hora</button>' : ''}`;
     el.innerHTML = `
       <div class="rem-banner-icon" aria-hidden="true">${alerta ? '⚠️' : '🔔'}</div>
@@ -291,8 +368,8 @@ const MSRec = (() => {
     if (registroHoy(records, ahora) || !v.daily) { const b = document.getElementById('remBanner'); if (b && b.dataset.tipo === 'daily') quitarBanner(); }
 
     const items = [];
-    if (v.daily) items.push({ tipo: 'daily', msg: mensajeDiario(records, onb, ahora), url: 'registro.html', notif: 'notifiedDaily' });
-    if (v.weekly) items.push({ tipo: 'weekly', msg: mensajeSemanal(records, ahora), url: 'historial.html', notif: 'notifiedWeekly' });
+    if (v.daily) items.push({ tipo: 'daily', msg: mensajeDiario(records, onb, ahora), url: 'registro.html?tab=prodromico', notif: 'notifiedDaily' });
+    if (v.weekly) items.push({ tipo: 'weekly', msg: mensajeSemanal(records, ahora), url: 'historial.html?reporte=1', notif: 'notifiedWeekly' });
 
     for (const it of items) {
       // Notificación del dispositivo: una sola vez por día y solo si la pestaña no está a la vista
@@ -308,10 +385,12 @@ const MSRec = (() => {
   function iniciar() {
     if (!MS.isLoggedIn()) return;
     registrarSW();
-    // Si ya dio permiso, se asegura una vez por sesión de que el servidor tenga este dispositivo
-    let sincronizado = false;
-    try { sincronizado = sessionStorage.getItem('ms_push_sync') === '1'; } catch (e) { /* nada */ }
-    if (permiso() === 'granted' && !sincronizado && typeof MSApi !== 'undefined') suscribirPush();
+    // Si ya dio permiso, se asegura de que el servidor tenga este dispositivo: una vez por
+    // sesión, y además siempre que el navegador haya perdido o cambiado su suscripción
+    // (pasa al borrar datos del sitio o cuando el navegador la renueva): antes eso dejaba
+    // al dispositivo sin avisos sin que nadie se enterara.
+    asegurarPush();
+    invitarAActivar();
     comprobar();
     clearInterval(intervalo);
     intervalo = setInterval(comprobar, 30000);
@@ -333,8 +412,8 @@ const MSRec = (() => {
   /** Notificación de ejemplo de "posible episodio" (para que la persona vea cómo se verá) */
   async function probarAlerta() {
     const p = await pedirPermiso();
-    const msg = { titulo: '⚠️ Posible episodio de migraña', cuerpo: 'En 5 a 10 horas puede que tengas un episodio de migraña. Descansa, hidrátate y evita tus desencadenantes.' };
-    if (p === 'granted') { const ok = await notificar({ ...msg, url: 'registro.html?tab=prodromico', tag: 'migrasense-alerta-prueba' }); return ok ? 'ok' : 'fallo'; }
+    const msg = { titulo: '⚠️ Posible migraña · 78 % de probabilidad', cuerpo: 'En 5 a 10 horas puede que tengas un episodio de migraña (probabilidad 78 %). Descansa, hidrátate y evita tus desencadenantes.' };
+    if (p === 'granted') { const ok = await notificar({ ...msg, url: 'registro.html?tab=prodromico', tag: 'migrasense-alerta' }); return ok ? 'ok' : 'fallo'; }
     return p;
   }
 
@@ -346,7 +425,7 @@ const MSRec = (() => {
   return {
     get, save, update, normalizar, vencidos, proximo, textoProximo, probarAlerta,
     mensajeDiario, mensajeSemanal, permiso, pedirPermiso, notificar, probar, comprobar,
-    suscribirPush, quitarPush, pushActivo, soportaPush,
+    suscribirPush, quitarPush, pushActivo, soportaPush, asegurarPush,
     DIAS
   };
 })();

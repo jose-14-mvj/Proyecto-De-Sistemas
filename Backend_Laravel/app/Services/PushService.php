@@ -42,6 +42,23 @@ class PushService
         DB::table('suscripcion_push')->where('id_usuario', $idUsuario)->where('endpoint_hash', hash('sha256', $endpoint))->delete();
     }
 
+    /**
+     * El navegador cambió su suscripción por su cuenta (evento pushsubscriptionchange): se
+     * reemplaza la anterior por la nueva, conservando la cuenta. Sin esto el dispositivo
+     * dejaba de recibir avisos en silencio hasta que la persona volvía a abrir la app.
+     * Devuelve false si la suscripción anterior no existe.
+     */
+    public function renovar(string $anterior, string $endpoint, string $p256dh, string $auth): bool
+    {
+        $fila = DB::table('suscripcion_push')->where('endpoint_hash', hash('sha256', $anterior))->first(['id_suscripcion', 'id_usuario', 'agente']);
+        if (! $fila) {
+            return false;
+        }
+        DB::table('suscripcion_push')->where('id_suscripcion', $fila->id_suscripcion)->delete();
+        $this->suscribir((int) $fila->id_usuario, $endpoint, $p256dh, $auth, $fila->agente);
+        return true;
+    }
+
     public function cantidad(int $idUsuario): int
     {
         return DB::table('suscripcion_push')->where('id_usuario', $idUsuario)->count();
@@ -51,8 +68,12 @@ class PushService
      * Envía un aviso a todos los dispositivos de la persona.
      * $aviso = ['title' => …, 'body' => …, 'url' => 'registro.html', 'tag' => …]
      * Devuelve cuántos dispositivos lo aceptaron. Las suscripciones vencidas (404/410) se borran.
+     *
+     * Urgencia 'high': son avisos que la persona debe ver a su hora. Con 'normal', Android en
+     * reposo (Doze) los retiene hasta que se desbloquea el celular y parecen "no llegar".
+     * $ttl: segundos que el servicio de push guarda el aviso si el dispositivo está apagado.
      */
-    public function enviarAUsuario(int $idUsuario, array $aviso): int
+    public function enviarAUsuario(int $idUsuario, array $aviso, string $urgencia = 'high', int $ttl = 86400): int
     {
         if (! $this->configurado()) {
             return 0;
@@ -62,7 +83,7 @@ class PushService
         $ok = 0;
         foreach (DB::table('suscripcion_push')->where('id_usuario', $idUsuario)->get() as $s) {
             try {
-                $status = $wp->enviar(['endpoint' => $s->endpoint, 'p256dh' => $s->p256dh, 'auth' => $s->auth], $mensaje);
+                $status = $wp->enviar(['endpoint' => $s->endpoint, 'p256dh' => $s->p256dh, 'auth' => $s->auth], $mensaje, $ttl, $urgencia);
             } catch (Throwable $e) {
                 Log::warning('Push: no se pudo enviar a la suscripción '.$s->id_suscripcion.': '.$e->getMessage());
                 continue;
